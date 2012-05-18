@@ -318,6 +318,21 @@ class FedoraObject extends AbstractFedoraObject implements Countable, ArrayAcces
     }
   }
 
+  protected function modelsMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->objectProfile['objModels'];
+        break;
+      case 'isset':
+        return TRUE;
+        break;
+      case 'set':
+      case 'unset':
+        trigger_error("Cannot $function the readonly object->models.", E_USER_WARNING);
+        break;
+    }
+  }
+
   public function count() {
     $this->populateDatastreams();
     return count($this->datastreams);

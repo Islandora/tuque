@@ -88,9 +88,19 @@
   </exec>
  </target>
 
- <target name="doxygen" description="Generate API documentation with doxygen">
+ <target name="doxygen" description="Generate API documentation with doxygen" depends="prepare">
+  <echo file="${basedir}/tests/Doxyfile" append="true" message="PROJECT_NUMBER = "/>
+  <exec executable="git" output="${basedir}/tests/Doxyfile" append="true">
+    <arg value="log" />
+    <arg value="-1" />
+    <arg value="--pretty=format:%h" />
+  </exec>
   <exec executable="doxygen">
    <arg path="${basedir}/tests/Doxyfile" />
+  </exec>
+  <exec executable="git">
+    <arg value="checkout" />
+    <arg path="${basedir}/tests/Doxyfile" />
   </exec>
  </target>
 

@@ -9,8 +9,9 @@ require_once "FoxmlDocument.php";
 require_once "Object.php";
 
 /**
- * An abstract repository interface. This can be used to override the
- * implementation of the Repository.
+ * An abstract repository interface.
+ *
+ * This can be used to override the implementation of the Repository.
  *
  * Instantantiated children of this abstract class allow objects to be accessed
  * as an array for example to get an object:
@@ -58,26 +59,82 @@ abstract class AbstractRepository extends MagicProperty implements ArrayAccess {
    * @return AbstractObject
    *   The ingested abstract object.
    */
-  abstract public function ingestNewObject(&$object);
+  abstract public function ingestNewObject(NewFedoraObject &$object);
 
   /**
+   * Gets a object from the repository.
    *
+   * @param string $id
+   *   The identifier of the object.
+   *
+   * @return AbstractObject
+   *   The requested object.
    */
   abstract public function getObject($id);
 
-  //abstract public function getObject($pid);
-  //abstract public function newObject($pid);
+  /**
+   * Removes an object from the repository.
+   *
+   * This function removes an object from the repository premenenty. It is a
+   * dangerous function since it remvoes an object and all of its history from
+   * the repository permenently.
+   *
+   * @param string $id
+   *   The identifier of the object.
+   *
+   * @return boolean
+   *   TRUE if object was purged.
+   */
+  abstract public function purgeObject($id);
+
+  /**
+   * Search the repository for objects.
+   *
+   * This function isn't fully implemented yet.
+   *
+   * @todo Flesh out the function definition for this.
+   */
   abstract public function findObjects(array $search);
 }
 
+/**
+ * Concrete implementation of the AbstractRepository for Fedora.
+ *
+ * The parent class has more detailed documentation about how this class can
+ * be called as an Array.
+ *
+ * @see AbstractRepository
+ */
 class FedoraRepository extends AbstractRepository {
+
+  /**
+   * This is an instantiated AbstractCache that we use to make sure we aren't
+   * instantiating the same objects over and over.
+   * 
+   * @var AbstractCache
+   */
   protected $cache;
 
+  /**
+   * Constructor for the FedoraRepository Object.
+   *
+   * @param FedoraApi $api
+   *   An instantiated FedoraAPI which will be used to connect to the
+   *   repository.
+   * @param AbstractCache $cache
+   *   An instantiated AbstractCache which will be used to cache fedora objects.
+   */
   public function __construct(FedoraApi $api, AbstractCache $cache) {
     $this->api = $api;
     $this->cache = $cache;
   }
 
+  /**
+   * Find objects in the Repository.
+   *
+   * @param array $search
+   * @see AbstractRepository::findObjects
+   */
   public function findObjects(array $search) {
   }
 

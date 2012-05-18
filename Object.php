@@ -6,6 +6,7 @@
 
 require_once 'MagicProperty.php';
 require_once 'FedoraDate.php';
+require_once 'Datastream.php';
 
 /**
  * An abstract class defining a Object in the repository. This is the class
@@ -194,10 +195,11 @@ class NewFedoraObject extends AbstractFedoraObject {
   }
 
   public function getDatastream($id) {}
+
   public function addDatastream($id, $params = array()) {}
 }
 
-class FedoraObject extends AbstractFedoraObject {
+class FedoraObject extends AbstractFedoraObject implements Countable, ArrayAccess, IteratorAggregate  {
 
   protected $datastreams = NULL;
   public $forceUpdate = FALSE;
@@ -215,7 +217,13 @@ class FedoraObject extends AbstractFedoraObject {
   }
 
   protected function populateDatastreams() {
-    $this->datastreams = $this->repository->api->a->listDatastreams($this->id);
+    if(!isset($this->datastreams)) {
+      $datastreams = $this->repository->api->a->listDatastreams($this->id);
+      $this->datastreams = array();
+      foreach($datastreams as $key => $value) {
+        $this->datastreams[$key] = new FedoraDatastream($key, $this, $this->repository);
+      }
+    }
   }
 
   protected function modifyObject($params) {
@@ -227,19 +235,27 @@ class FedoraObject extends AbstractFedoraObject {
   }
 
   public function purgeDatastream($id) {
-    if(!isset($this->datastreams)) {
-      $this->populateDatastreams();
-    }
+    $this->populateDatastreams();
 
     if(!array_key_exists($id, $this->datastreams)) {
       return FALSE;
     }
 
     $this->repository->api->m->purgeDatastream($this->id, $id);
+    unset($this->datastreams[$id]);
     return TRUE;
   }
   
-  public function getDatastream($id) {}
+  public function getDatastream($id) {
+    $this->populateDatastreams();
+
+    if(!array_key_exists($id, $this->datastreams)) {
+      return FALSE;
+    }
+
+    return $this->datastreams[$id];
+  }
+
   public function addDatastream($id, $params = array()) {}
 
   protected function stateMagicProperty($function, $value) {
@@ -300,5 +316,31 @@ class FedoraObject extends AbstractFedoraObject {
         trigger_error("Cannot $function the readonly object->lastModifiedDate property.", E_USER_WARNING);
         break;
     }
+  }
+
+  public function count() {
+    $this->populateDatastreams();
+    return count($this->datastreams);
+  }
+
+  public function offsetExists ($offset) {
+    $this->populateDatastreams();
+    return isset($this->datastreams[$offset]);
+  }
+
+  public function offsetGet ($offset) {
+    return $this->getDatastream($offset);
+  }
+
+  public function offsetSet ($offset, $value) {
+    trigger_error("Datastreams must be modified through the datastream object.", E_USER_WARNING);
+  }
+
+  public function offsetUnset ($offset) {
+    trigger_error("Datastreams must be removed through the datastream functions.", E_USER_WARNING);
+  }
+
+  public function getIterator() {
+    return new ArrayIterator($this->datastreams);
   }
 }

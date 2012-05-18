@@ -18,8 +18,10 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
     // create an object 
     $string1 = FedoraTestHelpers::randomString(10);
     $string2 = FedoraTestHelpers::randomString(10);
+    $this->testDsid = FedoraTestHelpers::randomCharString(10);
     $this->testPid = "$string1:$string2";
     $this->api->m->ingest(array('pid' => $this->testPid));
+    $this->api->m->addDatastream($this->testPid, $this->testDsid, 'string', '<test> test </test>', NULL);
     $this->object = new FedoraObject($this->testPid, $repository);
   }
 
@@ -144,6 +146,21 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
     $this->object->delete();
     $this->assertEquals('D', $this->object->state);
     $this->assertEquals('D', $this->getValue('objState'));
+  }
+
+  public function testObjectGetDS() {
+    $this->assertEquals(2, count($this->object));
+    $this->assertTrue(isset($this->object['DC']));
+    $this->assertTrue(isset($this->object[$this->testDsid]));
+    $this->assertFalse(isset($this->object['foo']));
+    $this->assertFalse($this->object['foo']);
+    $this->assertInstanceOf('FedoraDatastream', $this->object['DC']);
+    $this->assertEquals('DC', $this->object['DC']->id);
+    foreach($this->object as $id => $ds){
+      $this->assertTrue(in_array($id, array('DC', $this->testDsid)));
+      $this->assertTrue(in_array($ds->id, array('DC', $this->testDsid)));
+    }
+    $this->assertEquals("\n<test> test </test>\n", $this->object[$this->testDsid]->content);
   }
 
 }

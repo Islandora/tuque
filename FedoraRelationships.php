@@ -114,10 +114,10 @@ class FedoraRelationship {
     $description->appendChild($relationship);
 
     if( $object['type'] == 'dsid' ) {
-      $relationship.setAttributeNS($this->namespaces['rdf'], 'resource', 'info:fedora/' . $object['pid'] . '/' . $object['dsid']);
+      $relationship->setAttributeNS($this->namespaces['rdf'], 'resource', 'info:fedora/' . $object['pid'] . '/' . $object['dsid']);
     }
     elseif( $object['type'] == 'pid' ){
-        $relationship.setAttributeNS($this->namespaces['rdf'], 'resource', 'info:fedora/' . $object['pid']);
+        $relationship->setAttributeNS($this->namespaces['rdf'], 'resource', 'info:fedora/' . $object['pid']);
     }
     elseif($object['type'] == 'literal'){
         $relationship->nodeValue = $object['value'];

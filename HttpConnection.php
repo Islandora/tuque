@@ -125,6 +125,8 @@ abstract class HttpConnection {
    *   This paramerter must be one of: string, file.
    * @param string $data
    *   What this parameter contains is decided by the $type parameter.
+   * @param string $content_type
+   *   The content type header to set for the post request.
    *
    * @throws HttpConnectionException
    *
@@ -134,7 +136,7 @@ abstract class HttpConnection {
    *   * $return['headers'] = The HTTP headers of the reply
    *   * $return['content'] = The body of the HTTP reply
    */
-  abstract public function postRequest($url, $type, $data);
+  abstract public function postRequest($url, $type = 'none', $data = NULL, $content_type = NULL);
 
   /**
    * Send a HTTP GET request to URL.
@@ -160,7 +162,7 @@ abstract class HttpConnection {
    *   The URL to post the request to. Should start with the
    *   protocol. For example: http://.
    * @param string $type
-   *   This paramerter must be one of: string, file.
+   *   This paramerter must be one of: string, file, none.
    * @param string $data
    *   What this parameter contains is decided by the $type parameter.
    *
@@ -172,7 +174,7 @@ abstract class HttpConnection {
    *   * $return['headers'] = The HTTP headers of the reply
    *   * $return['content'] = The body of the HTTP reply
    */
-  abstract public function putRequest($url, $type, $data);
+  abstract public function putRequest($url, $type = 'none', $file = NULL);
 }
 
 /**
@@ -198,8 +200,8 @@ class CurlConnection extends HttpConnection {
 
     // See if we have any cookies in the session already
     // this makes sure JESSSION ids persist.
-    if (isset($_SESSION[$this::COOKIE_LOCATION])) {
-      file_put_contents($this->cookieFile, $_SESSION[$this::COOKIE_LOCATION]);
+    if (isset($_SESSION[self::COOKIE_LOCATION])) {
+      file_put_contents($this->cookieFile, $_SESSION[self::COOKIE_LOCATION]);
     }
   }
 
@@ -209,7 +211,7 @@ class CurlConnection extends HttpConnection {
   public function __destruct() {
     // Before we go, save our fedora session cookie to the browsers session.
     if (isset($_SESSION)) {
-      $SESSION[$this::COOKIE_LOCATION] = file_get_contents($this->cookieFile);
+      $SESSION[self::COOKIE_LOCATION] = file_get_contents($this->cookieFile);
     }
 
     if ($this->curlContext) {

@@ -1,199 +1,273 @@
 <?php
 
+/**
+ * @file
+ * This file defines the classes that are used for manipulaing the fedora
+ * relationships datastreams.
+ */
+
 define("XMLNS", "http://www.w3.org/2000/xmlns/");
+define("RDF_URI", 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
+define('FEDORA_RELS_EXT_URI', 'info:fedora/fedora-system:def/relations-external#');
+define("FEDORA_MODEL_URI", 'info:fedora/fedora-system:def/model#');
+define("ISLANDORA_RELS_EXT_URI", 'http://islandora.ca/ontology/relsext#');
+define("ISLANDORA_RELS_INT_URI", "http://islandora.ca/ontology/relsint#");
 
-class FedoraRelationshipException extends Exception {}
+require_once "RepositoryException.php";
 
-class FedoraRelationship {
+/**
+ * This is the base class for Fedora Relationships.
+ *
+ * @todo potentially we should validate the predicate URI
+ */
+class FedoraRelationships {
+  /**
+   * The datastream this class is manipulating.
+   * @var AbstractFedoraDatastream
+   */
+  public $datastream = NULL;
 
+  /**
+   * An array of namespaces that is used in the document.
+   * @var array
+   */
   protected $namespaces = array(
-    'rdf' => 'http://www.w3.org/1999/02/22-rdf-syntax-ns#',
-    'fedora' => 'info:fedora/fedora-system:def/relations-external#',
+    'rdf' => RDF_URI,
   );
 
-  protected $modified = FALSE;
-  protected $default;
-  protected $document;
-  protected $xpath;
-
-  public function  __construct($args = array('xml'=>NULL, 'namespaces'=>NULL, 'default_namespace'=>NULL)) {
-    if(isset($args['namespaces'])) {
-      foreach ($args['namespaces'] as $alias => $uri) {
-        $this->namespaces[$alias] = $uri;
-      }
-    }
-
-    if(isset($args['default_namespace'])) {
-      if(!isset($this->namespaces[$args['default_namespace']])) {
-        throw new FedoraRelationshipException('Default namespace must be in the namespaces array.');
-      }
-      $this->default = $args['default_namespace'];
-    }
-    else {
-      $this->default = 'fedora';
-    }
-
-    if(isset($args['xml'])) {
-      $this->document = new DomDocument();
-      $this->document->preserveWhiteSpace = False;
-
-      // Throw exception if DomDocument gave us a Parse error
-      if($this->document->loadXML($args['xml']) == FALSE) {
-        throw new FedoraRelationshipException('Error Parsing XML, DomDocument returned false.');
-      }
-
-      $root = $this->document->documentElement;
-
-      //make sure our namespaces are good
-      foreach($this->namespaces as $alias => $uri) {
-        $root->setAttributeNS(XMLNS,"xmlns:$alias", $uri);
-      }
-    }
-    else {
-      $this->document = new DomDocument("1.0", "UTF-8");
-      $rootelement = $this->document->createElementNS($this->namespaces['rdf'], 'RDF');
-      foreach ($this->namespaces as $alias => $uri) {
-        $rootelement->setAttributeNS(XMLNS, "xmlns:$alias", $uri);
-      }
-      $this->document->appendChild($rootelement);
-    }
-
-    $this->xpath = new DomXPath($this->document);
-    foreach($this->namespaces as $alias => $uri) {
-      $this->xpath->registerNamespace($alias, $uri);
+  /**
+   * The constructor. This will usually be called by one of its subclasses.
+   *
+   * @param array $namespaces
+   *   An array of default namespaces.
+   */
+  public function  __construct(array $namespaces = NULL) {
+    if ($namespaces) {
+      $this->namespaces = array_merge($this->namespaces, $namespaces);
     }
   }
 
-  public function toString($prettyPrint = TRUE) {
-    $this->document->formatOutput = $prettyPrint;
-    return $this->document->saveXml();
-  }
-  
-  private function normalizePredicate($predicate) {
-    if($predicate == NULL) {
-      return $predicate;
-    }
-    elseif(is_array($predicate)) {
-      if(!isset($predicate['alias'])) {
-        $predicate['alias'] = $this->default;
-      }
-      else {
-        if(!isset($this->namespaces[$predicate['alias']])) {
-          throw new FedoraRelationshipException('Given alias does not exists in namespaces.');
-        }
-      }
-      $predicate['uri'] = $this->namespaces[$predicate['alias']];
-      return $predicate;
-    }
-    else {
-      return array('alias' => $this->default, 'predicate' => $predicate, 'uri' => $this->namespaces[$this->default]);
-    }
+  /**
+   * Add a new namespace to the relationship xml. Doing this before adding new
+   * predicates with differnt URIs makes the XML look a little prettier.
+   *
+   * @param string $alias
+   *   The alias to add.
+   * @param string $uri
+   *   The URI to associate with the alias.
+   */
+  public function registerNamespace($alias, $uri) {
+    $this->namespaces[$alias] = $uri;
   }
 
-  public function addRelationship($subject = NULL, $predicate = NULL, $object = NULL) {
-    if($subject == NULL || $predicate == NULL || $object == NULL) {
-      throw new FedoraRelationshipException('Must specify a Subject, Predicate and Object.');
+  /**
+   * This function returns a domXPath object with all the current namespaces
+   * already registered.
+   *
+   * @return DomXPath
+   *   The object
+   */
+  protected function getXpath($document) {
+    $xpath = new DomXPath($document);
+    foreach ($this->namespaces as $alias => $uri) {
+      $xpath->registerNamespace($alias, $uri);
     }
+    return $xpath;
+  }
 
-    $this->modified = TRUE;
-
-    $predicate = $this->normalizePredicate($predicate);
-
-    $description = $this->xpath->query('/rdf:RDF/rdf:Description[@rdf:about="info:fedora/' . $subject . '"]');
-
-    if($description->length == 0) {
-      $description = $this->document->createElementNS($this->namespaces['rdf'], 'Description');
-      $this->document->documentElement->appendChild($description);
-      $description->setAttributeNS($this->namespaces['rdf'], 'about', "info:fedora/$subject");
+  /**
+   * Sets up a domdocument for the functions.
+   *
+   * @return DomDocument
+   *   The domdocument to modify
+   */
+  protected function getDom() {
+    if (isset($this->datastream->content)) {
+      // @todo Proper exception handling.
+      $document = new DomDocument();
+      $document->preserveWhiteSpace = FALSE;
+      $document->loadXml($this->datastream->content);
     }
     else {
-      $description = $description->item(0);
+      $document = new DomDocument("1.0", "UTF-8");
+      $rootelement = $document->createElementNS(RDF_URI, 'RDF');
+      $document->appendChild($rootelement);
     }
 
-    $relationship = $this->document->createElementNS($predicate['uri'], $predicate['predicate']);
+    // Setup the default namespace aliases.
+    foreach ($this->namespaces as $alias => $uri) {
+      $document->documentElement->setAttributeNS(XMLNS, "xmlns:$alias", $uri);
+    }
+
+    return $document;
+  }
+
+  /**
+   * This updates the associated datastreams content.
+   */
+  protected function updateDatastream($document) {
+      $document->formatOutput = TRUE;
+      $this->datastream->content = $document->saveXml();
+  }
+
+  /**
+   * Add a new relationship.
+   *
+   * @param string $subject
+   *   The subject. This can be a PID, or a PID/DSID combo. This string does
+   *   not contain the info:fedora/ part of the URI this is added automatically.
+   * @param string $predicate_uri
+   *   The URI to use as the namespace of the predicate. If you would like the
+   *   XML to use a prefix instead of the full predicate call the
+   *   FedoraRelationships::registerNamespace() function first.
+   * @param string $predicate
+   *   The predicate tag to add.
+   * @param string $object
+   *   The object for the relationship that is being created.
+   * @param boolean $literal
+   *   Specifies if the object is a literal or not.
+   */
+  public function add($subject, $predicate_uri, $predicate, $object, $literal = FALSE) {
+    $document = $this->getDom();
+    $xpath = $this->getXpath($document);
+
+    $description_upper = $xpath->query('/rdf:RDF/rdf:Description[@rdf:about="info:fedora/' . $subject . '"]');
+    $description_lower = $xpath->query('/rdf:RDF/rdf:description[@rdf:about="info:fedora/' . $subject . '"]');
+
+    if ($description_lower->length == 0 && $description_upper->length == 0) {
+      $description = $document->createElementNS(RDF_URI, 'Description');
+      $document->documentElement->appendChild($description);
+      $description->setAttributeNS(RDF_URI, 'about', "info:fedora/$subject");
+    }
+    elseif ($description_lower->length) {
+      $description = $description_lower->item(0);
+    }
+    else {
+      $description = $description_upper->item(0);
+    }
+
+    $relationship = $document->createElementNS($predicate_uri, $predicate);
     $description->appendChild($relationship);
 
-    if( $object['type'] == 'dsid' ) {
-      $relationship->setAttributeNS($this->namespaces['rdf'], 'resource', 'info:fedora/' . $object['pid'] . '/' . $object['dsid']);
-    }
-    elseif( $object['type'] == 'pid' ){
-        $relationship->setAttributeNS($this->namespaces['rdf'], 'resource', 'info:fedora/' . $object['pid']);
-    }
-    elseif($object['type'] == 'literal'){
-        $relationship->nodeValue = $object['value'];
-    }
-  }
-
-  private function getXpathResults($subject, $predicate, $object) {
-    $predicate = $this->normalizePredicate($predicate);
-
-    if ($subject == NULL) {
-      $xpath = '/rdf:RDF/rdf:Description';
+    if ($literal) {
+      $relationship->nodeValue = $object;
     }
     else {
-      $xpath = '/rdf:RDF/rdf:Description[@rdf:about="info:fedora/' . $subject . '"]';
+      $relationship->setAttributeNS(RDF_URI, 'resource', 'info:fedora/' . $object);
+    }
+
+    $this->updateDatastream($document);
+  }
+
+  /**
+   * This function is used to create an xpath expression based on the input.
+   *
+   * @return DOMNodeList
+   *   The node list
+   */
+  protected function getXpathResults($xpath_object, $subject, $predicate_uri, $predicate, $object, $literal) {
+    $xpath = '/rdf:RDF/rdf:Description[@rdf:about="info:fedora/' . $subject . '"]';
+
+    // We do this to deal with the lowercase d.
+    $result = $xpath_object->query($xpath);
+    if ($result->length == 0) {
+      $xpath = '/rdf:RDF/rdf:description[@rdf:about="info:fedora/' . $subject . '"]';
     }
 
     if ($predicate == NULL) {
       $xpath .= '/*';
     }
     else {
-      $xpath .= '/' . $predicate['uri'] . ':' . $predicate['predicate'];
+      $xpath_object->registerNamespace('pred_uri', $predicate_uri);
+      $xpath .= '/pred_uri:' . $predicate;
     }
 
     if ($object) {
-      if($object['type'] == 'pid') {
-        $xpath .= '[@rdf:resource="info:fedora/' . $object['pid'] . '"]';
-      }
-      elseif($object['type'] == 'dsid') {
-        $xpath .= '[@rdf:resource="info:fedora/' . $object['pid'] . '/' . $object['dsid'] . '"]';
-      }
-      elseif($object['type'] == 'literal') {
-        $xpath .= '[.="' . $object['literal'] . '"]';
-      }
-    }
-
-    return $this->xpath->query($xpath);
-  }
-
-  public function getRelationships($subject = NULL, $predicate = NULL, $object = NULL) {
-    $result_elements = $this->getXpathResults($subject, $predicate, $object);
-    $results = array();
-    foreach ($result_elements as $element){
-      $result = array();
-      $parent = $element->parentNode;
-      $subject = $parent->getAttributeNS($this->namespaces['rdf'],'about');
-      $subject = explode('/', $subject);
-      $subject = $subject[1];
-
-      $predicate = explode(':', $element->tagName);
-      $predicate = count($predicate) == 1 ? $predicate[0] : $predicate[1];
-      $predicate = array('predicate' => $predicate);
-      $predicate['uri'] = $element->namespaceURI;
-      $predicate['alias'] = $element->lookupPrefix($predicate['uri']);
-
-      $object = array();
-
-      if($element->hasAttributeNS($this->namespaces['rdf'],'resource')) {
-        $attrib = $element->getAttributeNS($this->namespaces['rdf'], 'resource');
-        $attrib = explode('/', $attrib);
-        if(count($attrib) == 2) {
-          $object['type'] = 'pid';
-          $object['pid'] = $attrib[1];
-        }
-        else {
-          $object['type'] = 'dsid';
-          $object['pid'] = $attrib[1];
-          $object['dsid'] = $attrib[2];
-        }
+      if ($literal) {
+        $xpath .= '[.="' . $object . '"]';
       }
       else {
-        $object['type'] = 'literal';
-        $object['value'] = $element->nodeValue;
+        $xpath .= '[@rdf:resource="info:fedora/' . $object . '"]';
+      }
+    }
+    return $xpath_object->query($xpath);
+  }
+
+  /**
+   * This function queries the relationships in the assocaited datastream. Any
+   * parameter except for $subject can be set to NULL to act as a wildcard.
+   * Calling with just $subject will return all relationships.
+   *
+   * @param string $subject
+   *   The subject. This can be a PID, or a PID/DSID combo. This string does
+   *   not contain the info:fedora/ part of the URI this is added automatically.
+   * @param string $predicate_uri
+   *   The URI to use as the namespace of the predicate. This is ignored if
+   *   predicate is NULL.
+   * @param string $predicate
+   *   The predicate tag to filter by.
+   * @param string $object
+   *   The object for the relationship to filter by.
+   * @param boolean $literal
+   *   Defines if the $object is a literal or not.
+   *
+   * @return array
+   *   This returns an indexed array with all the matching relationships. The
+   *   array is of the form:
+   *   @code
+   *   Array
+   *   (
+   *       [0] => Array
+   *           (
+   *               [predicate] => Array
+   *                   (
+   *                       [value] => thepredicate
+   *                       [alias] => thexmlprefix
+   *                       [namespace] => http://crazycool.com#
+   *                   )
+   *
+   *               [object] => Array
+   *                   (
+   *                       [literal] => TRUE
+   *                       [value] => test
+   *                   )
+   *
+   *           )
+   *
+   *   )
+   *   @endcode
+   */
+  public function get($subject, $predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
+    $document = $this->getDom();
+    $xpath = $this->getXpath($document);
+
+    $result_elements = $this->getXpathResults($xpath, $subject, $predicate_uri, $predicate, $object, $literal);
+    $results = array();
+    foreach ($result_elements as $element) {
+      $result = array();
+
+      $result['predicate'] = array();
+      $result['predicate']['value'] = $element->localName;
+      if (isset($element->prefix)) {
+        $result['predicate']['alias'] = $element->prefix;
+      }
+      if (isset($element->namespaceURI)) {
+        $result['predicate']['namespace'] = $element->namespaceURI;
       }
 
-      $result['subject'] = $subject;
-      $result['predicate'] = $predicate;
+      $object = array();
+      if ($element->hasAttributeNS($this->namespaces['rdf'], 'resource')) {
+        $attrib = $element->getAttributeNS($this->namespaces['rdf'], 'resource');
+        $attrib = explode('/', $attrib);
+        unset($attrib[0]);
+        $attrib = implode('/', $attrib);
+        $object['literal'] = FALSE;
+        $object['value'] = $attrib;
+      }
+      else {
+        $object['literal'] = TRUE;
+        $object['value'] = $element->nodeValue;
+      }
       $result['object'] = $object;
 
       $results[] = $result;
@@ -202,23 +276,331 @@ class FedoraRelationship {
     return $results;
   }
 
-  public function purgeRelationships($subject = NULL, $predicate = NULL, $object = NULL) {
+  /**
+   * This function removes relationships that match the pattern from the
+   * datastream. Any parameter can be given as NULL which will make it a
+   * wildcard.
+   *
+   * @param string $subject
+   *   The subject. This can be a PID, or a PID/DSID combo. This string does
+   *   not contain the info:fedora/ part of the URI this is added automatically.
+   * @param string $predicate_uri
+   *   The URI to use as the namespace of the predicate. This is ignored if
+   *   predicate is NULL.
+   * @param string $predicate
+   *   The predicate tag to filter removed results by.
+   * @param string $object
+   *   The object for the relationship to filter by.
+   * @param boolean $literal
+   *   Defines if the $object is a literal or not.
+   *
+   * @return boolean
+   *   TRUE if relationships were removed, FALSE otherwise.
+   */
+  public function remove($subject, $predicate_uri, $predicate, $object, $literal = FALSE) {
     $return = FALSE;
-    $result_elements = $this->getXpathResults($subject, $predicate, $object);
+    $document = $this->getDom();
+    $xpath = $this->getXpath($document);
 
-    if($result_elements->length > 0) {
+    $result_elements = $this->getXpathResults($xpath, $subject, $predicate_uri, $predicate, $object, $literal = FALSE);
+
+    if ($result_elements->length > 0) {
       $return = TRUE;
-      $this->modified = TRUE;
     }
 
-    foreach($result_elements as $element) {
+    foreach ($result_elements as $element) {
       $parent = $element->parentNode;
       $parent->removeChild($element);
 
-      if(!$parent->hasChildNodes()) {
+      if (!$parent->hasChildNodes()) {
         $parent->parentNode->removeChild($parent);
       }
     }
+
+    if ($return) {
+      $this->updateDatastream($document);
+    }
+
     return $return;
+  }
+
+}
+
+class FedoraRelsExt extends FedoraRelationships {
+  protected $new = FALSE;
+  protected $initialized = FALSE;
+
+  /**
+   * Objects Construct!
+   *
+   * @param AbstractFedoraObject $object
+   *   The object whose relationships we are manipulating
+   */
+  public function __construct(AbstractFedoraObject $object) {
+    $this->object = $object;
+
+    $namespaces = array(
+      'fedora' => FEDORA_RELS_EXT_URI,
+      'fedora-model' => FEDORA_MODEL_URI,
+      'islandora' => ISLANDORA_RELS_EXT_URI,
+    );
+
+    parent::__construct($namespaces);
+  }
+
+  /**
+   * Initialize the datastrem that we are using. We use this function to
+   * delay this as long as possible, in case it never has be be called.
+   */
+  protected function initializeDatastream() {
+    if (!$this->initialized) {
+      $this->initialized = TRUE;
+      if (isset($this->object['RELS-EXT'])) {
+        $ds = $this->object['RELS-EXT'];
+      }
+      else {
+        $ds = $this->object->constructDatastream('RELS-EXT', 'X');
+        $ds->label = 'Fedora Object to Object Relationship Metadata.';
+        $this->new = TRUE;
+      }
+
+      $this->datastream = $ds;
+    }
+  }
+
+  /**
+   * Add a new relationship.
+   *
+   * @param string $predicate_uri
+   *   The URI to use as the namespace of the predicate. If you would like the
+   *   XML to use a prefix instead of the full predicate call the
+   *   FedoraRelationships::registerNamespace() function first.
+   * @param string $predicate
+   *   The predicate tag to add.
+   * @param string $object
+   *   The object for the relationship that is being created.
+   * @param boolean $literal
+   *   Specifies if the object is a literal or not.
+   */
+  public function add($predicate_uri, $predicate, $object, $literal = FALSE) {
+    $this->initializeDatastream();
+    parent::add($this->object->id, $predicate_uri, $predicate, $object, $literal);
+
+    if ($this->new) {
+      $this->object->ingestDatastream($this->datastream);
+    }
+  }
+
+  /**
+   * This function removes relationships that match the pattern from the
+   * datastream. Any parameter can be given as NULL which will make it a
+   * wildcard.
+   *
+   * @param string $predicate_uri
+   *   The URI to use as the namespace of the predicate. This is ignored if
+   *   predicate is NULL.
+   * @param string $predicate
+   *   The predicate tag to filter removed results by.
+   * @param string $object
+   *   The object for the relationship to filter by.
+   * @param boolean $literal
+   *   Defines if the $object is a literal or not.
+   *
+   * @return boolean
+   *   TRUE if relationships were removed, FALSE otherwise.
+   */
+  public function remove($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
+    $this->initializeDatastream();
+    $return = parent::remove($this->object->id, $predicate_uri, $predicate, $object, $literal);
+
+    if ($this->new && $return) {
+      $this->object->ingestDatastream($this->datastream);
+    }
+
+    return $return;
+  }
+
+  /**
+   * This function queries the relationships in the assocaited datastream. Any
+   * parameter except for $subject can be set to NULL to act as a wildcard.
+   * Calling with just $subject will return all relationships.
+   *
+   * @param string $predicate_uri
+   *   The URI to use as the namespace of the predicate. This is ignored if
+   *   predicate is NULL.
+   * @param string $predicate
+   *   The predicate tag to filter by.
+   * @param string $object
+   *   The object for the relationship to filter by.
+   * @param boolean $literal
+   *   Defines if the $object is a literal or not.
+   *
+   * @return array
+   *   This returns an indexed array with all the matching relationships. The
+   *   array is of the form:
+   *   @code
+   *   Array
+   *   (
+   *       [0] => Array
+   *           (
+   *               [predicate] => Array
+   *                   (
+   *                       [value] => thepredicate
+   *                       [alias] => thexmlprefix
+   *                       [namespace] => http://crazycool.com#
+   *                   )
+   *
+   *               [object] => Array
+   *                   (
+   *                       [literal] => TRUE
+   *                       [value] => test
+   *                   )
+   *
+   *           )
+   *
+   *   )
+   *   @endcode
+   */
+  public function get($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
+    $this->initializeDatastream();
+    return parent::get($this->object->id, $predicate_uri, $predicate, $object, $literal);
+  }
+}
+
+class FedoraRelsInt extends FedoraRelationships {
+  protected $new = FALSE;
+  protected $initialized = FALSE;
+  protected $aboutDs;
+
+  /**
+   * Objects Construct!
+   *
+   * @param AbstractFedoraObject $datastream
+   *   The datastream whose relationships we are manipulating
+   */
+  public function __construct(AbstractFedoraDatastream $datastream) {
+    $this->aboutDs = $datastream;
+
+    $namespaces = array(
+      'islandora' => ISLANDORA_RELS_INT_URI,
+    );
+
+    parent::__construct($namespaces);
+  }
+
+  /**
+   * Delay initialization by waiting to set datastream with this function.
+   */
+  protected function initializeDatastream() {
+    if (!$this->initialized) {
+      $this->initialized = TRUE;
+      if (isset($this->aboutDs->parent['RELS-INT'])) {
+        $ds = $this->aboutDs->parent['RELS-INT'];
+      }
+      else {
+        $ds = $this->aboutDs->parent->constructDatastream('RELS-INT', 'X');
+        $ds->label = 'Fedora Relationship Metadata.';
+        $this->new = TRUE;
+      }
+      $this->datastream = $ds;
+    }
+  }
+
+  /**
+   * Add a new relationship.
+   *
+   * @param string $predicate_uri
+   *   The URI to use as the namespace of the predicate. If you would like the
+   *   XML to use a prefix instead of the full predicate call the
+   *   FedoraRelationships::registerNamespace() function first.
+   * @param string $predicate
+   *   The predicate tag to add.
+   * @param string $object
+   *   The object for the relationship that is being created.
+   * @param boolean $literal
+   *   Specifies if the object is a literal or not.
+   */
+  public function add($predicate_uri, $predicate, $object, $literal = FALSE) {
+    $this->initializeDatastream();
+    parent::add("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
+
+    if ($this->new) {
+      $this->aboutDs->parent->ingestDatastream($this->datastream);
+    }
+  }
+
+  /**
+   * This function removes relationships that match the pattern from the
+   * datastream. Any parameter can be given as NULL which will make it a
+   * wildcard.
+   *
+   * @param string $predicate_uri
+   *   The URI to use as the namespace of the predicate. This is ignored if
+   *   predicate is NULL.
+   * @param string $predicate
+   *   The predicate tag to filter removed results by.
+   * @param string $object
+   *   The object for the relationship to filter by.
+   * @param boolean $literal
+   *   Defines if the $object is a literal or not.
+   *
+   * @return boolean
+   *   TRUE if relationships were removed, FALSE otherwise.
+   */
+  public function remove($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
+    $this->initializeDatastream();
+    $return = parent::remove("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
+
+    if ($this->new && $return) {
+      $this->aboutDs->parent->ingestDatastream($this->datastream);
+    }
+
+    return $return;
+  }
+
+  /**
+   * This function queries the relationships in the assocaited datastream. Any
+   * parameter except for $subject can be set to NULL to act as a wildcard.
+   * Calling with just $subject will return all relationships.
+   *
+   * @param string $predicate_uri
+   *   The URI to use as the namespace of the predicate. This is ignored if
+   *   predicate is NULL.
+   * @param string $predicate
+   *   The predicate tag to filter by.
+   * @param string $object
+   *   The object for the relationship to filter by.
+   * @param boolean $literal
+   *   Defines if the $object is a literal or not.
+   *
+   * @return array
+   *   This returns an indexed array with all the matching relationships. The
+   *   array is of the form:
+   *   @code
+   *   Array
+   *   (
+   *       [0] => Array
+   *           (
+   *               [predicate] => Array
+   *                   (
+   *                       [value] => thepredicate
+   *                       [alias] => thexmlprefix
+   *                       [namespace] => http://crazycool.com#
+   *                   )
+   *
+   *               [object] => Array
+   *                   (
+   *                       [literal] => TRUE
+   *                       [value] => test
+   *                   )
+   *
+   *           )
+   *
+   *   )
+   *   @endcode
+   */
+  public function get($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
+    $this->initializeDatastream();
+    return parent::get("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
   }
 }

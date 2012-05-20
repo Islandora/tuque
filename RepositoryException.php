@@ -30,3 +30,8 @@ class RepositoryXmlError extends RepositoryException {
  * This is thrown when a bad arguement is passed.
  */
 class RepositoryBadArguementException extends RepositoryException {}
+
+/**
+ * This is thrown from the relationships class when something goes wrong
+ */
+class RepositoryRelationshipsException extends RepositoryException {}

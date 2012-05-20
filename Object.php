@@ -122,7 +122,7 @@ abstract class AbstractObject extends MagicProperty implements Countable, ArrayA
    * @return AbstractDatastream
    *   Returns an instantiated Datastream object.
    */
-  abstract public function constructDatastream($id, $control_group);
+  abstract public function constructDatastream($id, $control_group = 'M');
 
   /**
    * Ingests a datastream object into the repository.
@@ -134,6 +134,12 @@ abstract class AbstractObject extends MagicProperty implements Countable, ArrayA
  * This is the base class for a Fedora Object.
  */
 abstract class AbstractFedoraObject extends AbstractObject {
+
+  /**
+   * This is an object for manipulating relationships related to this object.
+   * @var FedoraRelsExt
+   */
+  public $relationships;
 
   /**
    * The repository this object belongs to.
@@ -166,6 +172,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
     unset($this->lastModifiedDate);
     unset($this->label);
     unset($this->owner);
+    $this->relationships = new FedoraRelsExt($this);
   }
 
   /**
@@ -297,8 +304,8 @@ abstract class AbstractFedoraObject extends AbstractObject {
   /**
    * @see AbstractObject::constructDatastream()
    */
-  public function constructDatastream($id, $control_group) {
-    return new NewFedoraDatastream($id, $control_group);
+  public function constructDatastream($id, $control_group = 'M') {
+    return new NewFedoraDatastream($id, $control_group, $this, $this->repository);
   }
 }
 
@@ -330,7 +337,7 @@ class NewFedoraObject extends AbstractFedoraObject {
   /**
    * @see AbstractObject::constructDatastream()
    */
-  public function constructDatastream($id, $control_group) {
+  public function constructDatastream($id, $control_group = 'M') {
     return parent::constructDatastream($id, $control_group);
   }
 
@@ -620,7 +627,7 @@ class FedoraObject extends AbstractFedoraObject {
   /**
    * @see AbstractObject::constructDatastream()
    */
-  public function constructDatastream($id, $control_group) {
+  public function constructDatastream($id, $control_group = 'M') {
     return parent::constructDatastream($id, $control_group);
   }
 

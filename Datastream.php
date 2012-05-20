@@ -144,6 +144,24 @@ abstract class AbstractDatastream extends MagicProperty {
 abstract class AbstractFedoraDatastream extends AbstractDatastream {
 
   /**
+   * The repository this object belongs to.
+   * @var FedoraRepository
+   */
+  public $repository;
+
+  /**
+   * The fedora object this datastream belongs to.
+   * @var AbstractFedoraObject
+   */
+  public $parent;
+
+  /**
+   * An object for manipulating the fedora relationships related to this DS.
+   * @var FedoraRelsInt
+   */
+  public $relationships;
+
+  /**
    * The read only ID of the datastream.
    *
    * @var string
@@ -164,7 +182,7 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
    * @param string $id
    *   The identifier of the datastream.
    */
-  public function  __construct($id) {
+  public function  __construct($id, AbstractFedoraObject $object, FedoraRepository $repository) {
     unset($this->id);
     unset($this->label);
     unset($this->controlGroup);
@@ -179,6 +197,9 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
     unset($this->content);
     unset($this->url);
     $this->datastreamId = $id;
+    $this->parent = $object;
+    $this->repository = $repository;
+    $this->relationships = new FedoraRelsInt($this);
   }
 
   /**
@@ -354,13 +375,17 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
    *
    * @param string $id
    *   The unique identifier of the DS.
+   * @param FedoraObject $object
+   *   The FedoraObject that this DS belongs to.
+   * @param FedoraRepository $repository
+   *   The FedoraRepository that this DS belongs to.
    * @param string $control_group
    *   The control group this DS will belong to.
    *
    * @todo test for valid identifiers. it can't start with a number etc.
    */
-  public function  __construct($id, $control_group = 'M') {
-    parent::__construct($id);
+  public function  __construct($id, $control_group, AbstractFedoraObject $object, FedoraRepository $repository) {
+    parent::__construct($id, $object, $repository);
 
     $group = $this->validateControlGroup($control_group);
 
@@ -796,18 +821,6 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
 abstract class AbstractExistingFedoraDatastream extends AbstractFedoraDatastream {
 
   /**
-   * The repository this object belongs to.
-   * @var FedoraRepository
-   */
-  public $repository;
-
-  /**
-   * The fedora object this datastream belongs to.
-   * @var FedoraObject
-   */
-  protected $object;
-
-  /**
    * Class constructor.
    *
    * @param string $id
@@ -818,9 +831,7 @@ abstract class AbstractExistingFedoraDatastream extends AbstractFedoraDatastream
    *   The FedoraRepository that this DS belongs to.
    */
   public function  __construct($id, FedoraObject $object, FedoraRepository $repository) {
-    parent::__construct($id);
-    $this->repository = $repository;
-    $this->object = $object;
+    parent::__construct($id, $object, $repository);
   }
 
   /**
@@ -833,7 +844,7 @@ abstract class AbstractExistingFedoraDatastream extends AbstractFedoraDatastream
    *   String containing the content.
    */
   protected function getDatastreamContent($version = NULL) {
-    return $this->repository->api->a->getDatastreamDissemination($this->object->id, $this->id, $version);
+    return $this->repository->api->a->getDatastreamDissemination($this->parent->id, $this->id, $version);
   }
 
   /**
@@ -843,7 +854,7 @@ abstract class AbstractExistingFedoraDatastream extends AbstractFedoraDatastream
    *   Array containing datastream history.
    */
   protected function getDatastreamHistory() {
-    return $this->repository->api->m->getDatastreamHistory($this->object->id, $this->id);
+    return $this->repository->api->m->getDatastreamHistory($this->parent->id, $this->id);
   }
 
   /**
@@ -856,7 +867,7 @@ abstract class AbstractExistingFedoraDatastream extends AbstractFedoraDatastream
    *   Datastream history array.
    */
   protected function modifyDatastream(array $args) {
-    return $this->repository->api->m->modifyDatastream($this->object->id, $this->id, $args);
+    return $this->repository->api->m->modifyDatastream($this->parent->id, $this->id, $args);
   }
 
   /**
@@ -869,7 +880,7 @@ abstract class AbstractExistingFedoraDatastream extends AbstractFedoraDatastream
    *   The versions purged.
    */
   protected function purgeDatastream($version) {
-    return $this->repository->api->m->purgeDatastream($this->object->id, $this->id, array('startDT' => $version, 'endDT' => $version));
+    return $this->repository->api->m->purgeDatastream($this->parent->id, $this->id, array('startDT' => $version, 'endDT' => $version));
   }
 }
 
@@ -1503,7 +1514,7 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
    */
   public function offsetGet ($offset) {
     $this->populateDatastreamHistory();
-    return new FedoraDatastreamVersion($this->id, $this->datastreamHistory[$offset], $this, $this->object, $this->repository);
+    return new FedoraDatastreamVersion($this->id, $this->datastreamHistory[$offset], $this, $this->parent, $this->repository);
   }
 
   /**
@@ -1534,7 +1545,7 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
   public function getIterator() {
     $history = array();
     foreach ($this->datastreamHistory as $key => $value) {
-      $history[$key] = new FedoraDatastreamVersion($this->id, $value, $this, $this->object, $this->repository);
+      $history[$key] = new FedoraDatastreamVersion($this->id, $value, $this, $this->parent, $this->repository);
     }
     return new ArrayIterator($history);
   }

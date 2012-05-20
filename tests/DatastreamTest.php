@@ -269,6 +269,19 @@ foo;
     $this->assertEquals('A', $this->ds[1]->state);
   }
 
+  public function testVersionsForEach() {
+    $this->assertEquals(1, count($this->ds));
+    $this->assertEquals('A', $this->ds->state);
+    $this->ds->state = 'D';
+    $this->assertEquals(2, count($this->ds));
+
+    $state = array(0 => 'D', 1 => 'A');
+
+    foreach($this->ds as $key => $version) {
+      $this->assertEquals($state[$key], $version->state);
+    }
+  }
+
   public function testVersionsVersionable() {
     $this->assertEquals('', $this->ds->label);
     $this->assertEquals(1, count($this->ds));

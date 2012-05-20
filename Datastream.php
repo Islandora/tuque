@@ -1,39 +1,170 @@
 <?php
+/**
+ * @file
+ * This file defines all the classes used to manipulate datastreams in the
+ * repository.
+ */
 
 require_once 'MagicProperty.php';
 require_once 'FedoraDate.php';
 
+/**
+ * This abstract class can be overriden by anything implementing a datastream.
+ */
 abstract class AbstractDatastream extends MagicProperty {
 
-  /* functions */
+  /**
+   * This will set the state of the datastream to deleted.
+   */
   abstract public function delete();
+
+  /**
+   * Set the contents of the datastream from a file.
+   *
+   * @param string $file
+   *   The full path of the file to set to the contents of the datastream.
+   */
   abstract public function setContentFromFile($file);
+
+  /**
+   * Set the contents of the datastream from a URL. The contents of this
+   * URL will be fetched, and the datastream will be updated to contain the
+   * contents of the URL.
+   *
+   * @param string $url
+   *   The full URL to fetch.
+   */
   abstract public function setContentFromUrl($url);
+
+  /**
+   * Set the contents of the datastream from a string.
+   *
+   * @param string $string
+   *   The string whose contents will become the contents of the datastream.
+   */
   abstract public function setContentFromString($string);
 
+  /**
+   * The identifier of the datastream. This is a read-only property.
+   *
+   * @var string
+   */
   public $id;
+
+  /**
+   * The label of the datastream.
+   * @var string
+   */
   public $label;
+
+  /**
+   * The control group of the datastream. This property is read-only. This will
+   * return one of: "X", "M", "R", or "E" (Inline *X*ML, *M*anaged Content,
+   * *R*edirect, or *E*xternal Referenced). Defaults to "M".
+   * @var string
+   */
   public $controlGroup;
+
+  /**
+   * This defines if the datastream will be versioned or not.
+   * @var boolean
+   */
   public $versionable;
+
+  /**
+   * The state of the datastream. This will be one of: "A", "I", "D". When
+   * setting the property you can use: A, I, D or Active, Inactive, Deleted.
+   * @var string
+   */
   public $state;
+
+  /**
+   * The mimetype of the datastrem.
+   * @var string
+   */
   public $mimetype;
+
+  /**
+   * The format of the datastream.
+   * @var string
+   */
   public $format;
+
+  /**
+   * The size in bytes of the datastream. This is only valid once a datastream
+   * has been ingested.
+   *
+   * @var int
+   */
   public $size;
+
+  /**
+   * The base64 encoded checksum string.
+   *
+   * @var string
+   */
   public $checksum;
+
+  /**
+   * The type of checksum that will be done on this datastream. Defaults to
+   * DISABLED. One of: DISABLED, MD5, SHA-1, SHA-256, SHA-384, SHA-512.
+   *
+   * @var string
+   */
   public $checksumType;
+
+  /**
+   * The date the datastream was created.
+   *
+   * @var FedoraDate
+   */
   public $createdDate;
 
+  /**
+   * The contents of the datastream as a string. This can only be set for
+   * M and X datastreams. For R and E datastreams the URL property needs to be
+   * set which will change the contents of this property.
+   *
+   * @var string
+   */
   public $content;
+
+  /**
+   * This is only valid for R and E datastreams. This is the URL that the
+   * datastream references.
+   *
+   * @var string
+   */
   public $url;
 }
 
+/**
+ * Abstract base class implementing a datastream in Fedora.
+ */
 abstract class AbstractFedoraDatastream extends AbstractDatastream {
-  protected $datastreamId = NULL;
-  protected $datastreamInfo = NULL;
-  protected $repository;
-  protected $object;
 
-  public function  __construct($id, FedoraObject $object, FedoraRepository $repository) {
+  /**
+   * The read only ID of the datastream.
+   *
+   * @var string
+   */
+  protected $datastreamId = NULL;
+
+  /**
+   * The array defining what is in the datastream.
+   *
+   * @var array
+   * @see FedoraApiM::getDatastream
+   */
+  protected $datastreamInfo = NULL;
+
+  /**
+   * The constructor for the datastream.
+   *
+   * @param string $id
+   *   The identifier of the datastream.
+   */
+  public function  __construct($id) {
     unset($this->id);
     unset($this->label);
     unset($this->controlGroup);
@@ -48,10 +179,11 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
     unset($this->content);
     unset($this->url);
     $this->datastreamId = $id;
-    $this->repository = $repository;
-    $this->object = $object;
   }
 
+  /**
+   * @see AbstractDatastream::id
+   */
   protected function idMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -69,10 +201,25 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
     }
   }
 
+  /**
+   * @see AbstractDatastream::delete()
+   */
   public function delete() {
     $this->state = 'd';
   }
 
+  /**
+   * This is a replacement for isset when things can't be unset. So we define
+   * a default value, then return TRUE or FALSE based on if it is set.
+   *
+   * @param anything $actual
+   *   The value we are testing.
+   * @param anything $unsetval
+   *   The value it would be if it was unset.
+   *
+   * @return boolean
+   *   TRUE or FALSE
+   */
   protected function isDatastreamProperySet($actual, $unsetval) {
     if ($actual === $unsetval) {
       return FALSE;
@@ -82,22 +229,36 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
     }
   }
 
-  protected function getDatastreamContent($version = NULL) {
-    return $this->repository->api->a->getDatastreamDissemination($this->object->id, $this->id, $version);
+  /**
+   * Validates a mimetype using a regular expression.
+   *
+   * @param string $mime
+   *   A string representing a mimetype
+   *
+   * @return boolean
+   *   TRUE if the string looks like a mimetype.
+   *
+   * @todo test if this covers all cases.
+   */
+  protected function validateMimetype($mime) {
+    if (preg_match('#^[-\w]+/[-\w+]+$#', $mime)) {
+      return TRUE;
+    }
+    else {
+      return FALSE;
+    }
   }
 
-  protected function getDatastreamHistory() {
-    return $this->repository->api->m->getDatastreamHistory($this->object->id, $this->id);
-  }
-
-  protected function modifyDatastream($args) {
-    return $this->repository->api->m->modifyDatastream($this->object->id, $this->id, $args);
-  }
-
-  protected function purgeDatastream($version) {
-    return $this->repository->api->m->purgeDatastream($this->object->id, $this->id, array('startDT' => $version, 'endDT' => $version));
-  }
-
+  /**
+   * Validates and normalizes the datastream state.
+   *
+   * @param string $state
+   *   The input state
+   *
+   * @return string
+   *   Returns FALSE if validation fails, otherwise it returns the normalized
+   *   datastream state.
+   */
   protected function validateState($state) {
     switch (strtolower($state)) {
       case 'd':
@@ -121,10 +282,28 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
     }
   }
 
+  /**
+   * Validates the versionable setting of a datastream.
+   *
+   * @param mixed $versionable
+   *   The input versionable arguement.
+   *
+   * @return boolean
+   *   Returns TRUE if the arguement is a boolean, FALSE otherwise.
+   */
   protected function validateVersionable($versionable) {
     return is_bool($versionable);
   }
 
+  /**
+   * Validates and normalizes the checksumType arguement.
+   *
+   * @param string $type
+   *   The input string
+   *
+   * @return mixed
+   *   FALSE if validation fails. The checksumType string otherwise.
+   */
   protected function validateChecksumType($type) {
     switch ($type) {
       case 'DEFAULT':
@@ -143,6 +322,9 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
     }
   }
 
+  /**
+   * @see AbstractDatastream::controlGroup
+   */
   protected function controlGroupMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -161,20 +343,569 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
   }
 }
 
-class FedoraDatastreamVersion extends AbstractFedoraDatastream {
-  protected $repository;
+/**
+ * This defines a new fedora datastream. This is the class used to contain the
+ * inforamtion for a new fedora datastream before it is ingested.
+ */
+class NewFedoraDatastream extends AbstractFedoraDatastream {
+
+  /**
+   * The constructor for a new fedora datastream.
+   *
+   * @param string $id
+   *   The unique identifier of the DS.
+   * @param string $control_group
+   *   The control group this DS will belong to.
+   *
+   * @todo test for valid identifiers. it can't start with a number etc.
+   */
+  public function  __construct($id, $control_group = 'M') {
+    parent::__construct($id);
+
+    $group = $this->validateControlGroup($control_group);
+
+    if ($group === FALSE) {
+      trigger_error("Invalid control group \"$control_group\", using managed instead.", E_USER_WARNING);
+      $group = 'M';
+    }
+
+    // Set defaults!
+    $this->datastreamInfo['dsControlGroup'] = $group;
+    $this->datastreamInfo['dsState'] = 'A';
+    $this->datastreamInfo['dsLabel'] = '';
+    $this->datastreamInfo['dsVersionable'] = TRUE;
+    $this->datastreamInfo['dsMIME'] = 'text/xml';
+    $this->datastreamInfo['dsFormatURI'] = '';
+    $this->datastreamInfo['dsChecksumType'] = 'DISABLED';
+    $this->datastreamInfo['dsChecksum'] = 'none';
+
+    $this->datastreamInfo['content'] = array('type' => 'string', 'content' => ' ');
+  }
+
+  /**
+   * Validates and normalizes the control group.
+   *
+   * @param string $value
+   *   The passed in control group.
+   *
+   * @return mixed
+   *   The stirng for hte controlgroup or FALSE if validation fails.
+   */
+  protected function validateControlGroup($value) {
+    switch (strtolower($value)) {
+      case 'x':
+      case 'inline':
+      case 'inline xml':
+        return 'X';
+        break;
+
+      case 'm':
+      case 'managed':
+      case 'managed content':
+        return 'M';
+        break;
+
+      case 'r':
+      case 'redirect':
+        return 'R';
+        break;
+
+      case 'e':
+      case 'external':
+      case 'external referenced':
+        return 'E';
+        break;
+
+      default:
+        return FALSE;
+        break;
+    }
+  }
+
+  /**
+   * Validates and normalizes the contentType.
+   *
+   * @param string $type
+   *   The passed in value for type.
+   *
+   * @return mixed
+   *   The stirng for the type or FALSE if validation fails.
+   */
+  protected function validateType($type) {
+    switch (strtolower($type)) {
+      case 'string':
+        return 'string';
+        break;
+
+      case 'url':
+        return 'url';
+        break;
+
+      case 'file':
+        return 'file';
+        break;
+
+      default:
+        return FALSE;
+        break;
+    }
+  }
+
+  /**
+   *  @see AbstractDatastream::controlGroup
+   */
+  protected function controlGroupMagicProperty($function, $value) {
+    return parent::controlGroupMagicProperty($function, $value);
+  }
+
+  /**
+   *  @see AbstractDatastream::state
+   */
+  protected function stateMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['dsState'];
+        break;
+
+      case 'isset':
+        return TRUE;
+        break;
+
+      case 'set':
+        $state = $this->validateState($value);
+        if ($state !== FALSE) {
+          $this->datastreamInfo['dsState'] = $state;
+        }
+        else {
+          trigger_error("$value is not a valid value for the datastream->state property.", E_USER_WARNING);
+        }
+        break;
+
+      case 'unset':
+        trigger_error("Cannot unset the required datastream->state property.", E_USER_WARNING);
+        break;
+    }
+  }
+
+  /**
+   *  @see AbstractDatastream::label
+   */
+  protected function labelMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['dsLabel'];
+        break;
+
+      case 'isset':
+        return $this->isDatastreamProperySet($this->datastreamInfo['dsLabel'], '');
+        break;
+
+      case 'set':
+        $this->datastreamInfo['dsLabel'] = $value;
+        break;
+
+      case 'unset':
+        $this->datastreamInfo['dsLabel'] = '';
+        break;
+    }
+  }
+
+  /**
+   *  @see AbstractDatastream::versionable
+   */
+  protected function versionableMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['dsVersionable'];
+        break;
+
+      case 'isset':
+        return TRUE;
+        break;
+
+      case 'set':
+        if ($this->validateVersionable($value)) {
+          $this->datastreamInfo['dsVersionable'] = $value;
+        }
+        else {
+          trigger_error("Datastream->versionable must be a boolean.", E_USER_WARNING);
+        }
+        break;
+
+      case 'unset':
+        trigger_error("Cannot unset the required datastream->versionable property.", E_USER_WARNING);
+        break;
+    }
+  }
+
+  /**
+   *  @see AbstractDatastream::mimetype
+   */
+  protected function mimetypeMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['dsMIME'];
+        break;
+
+      case 'isset':
+        return TRUE;
+        break;
+
+      case 'set':
+        if ($this->validateMimetype($value)) {
+          $this->datastreamInfo['dsMIME'] = $value;
+        }
+        else {
+          trigger_error("Invalid mimetype.", E_USER_WARNING);
+        }
+        break;
+
+      case 'unset':
+        trigger_error("Cannot unset the required datastream->mimetype property.", E_USER_WARNING);
+        break;
+    }
+  }
+
+  /**
+   *  @see AbstractDatastream::format
+   */
+  protected function formatMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['dsFormatURI'];
+        break;
+
+      case 'isset':
+        return $this->isDatastreamProperySet($this->datastreamInfo['dsFormatURI'], '');
+        break;
+
+      case 'set':
+        $this->datastreamInfo['dsFormatURI'] = $value;
+        break;
+
+      case 'unset':
+        $this->datastreamInfo['dsFormatURI'] = '';
+        break;
+    }
+  }
+
+  /**
+   * @see AbstractDatastream::checksum
+   * @todo this should be refined a bit
+   */
+  protected function checksumMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['dsChecksum'];
+        break;
+
+      case 'isset':
+        return $this->isDatastreamProperySet($this->datastreamInfo['dsChecksum'], 'none');
+        break;
+
+      case 'set':
+        $this->datastreamInfo['dsChecksum'] = $value;
+
+      case 'unset':
+        $this->datastreamInfo['dsChecksum'] = 'none';
+        break;
+    }
+  }
+
+  /**
+   *  @see AbstractDatastream::checksumType
+   */
+  protected function checksumTypeMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['dsChecksumType'];
+        break;
+
+      case 'isset':
+        return $this->isDatastreamProperySet($this->datastreamInfo['dsChecksumType'], 'DISABLED');
+        break;
+
+      case 'set':
+        $type = $this->validateChecksumType($value);
+        if ($type !== FALSE) {
+          $this->datastreamInfo['dsChecksumType'] = $type;
+        }
+        else {
+          trigger_error("$value is not a valid value for the datastream->checksumType property.", E_USER_WARNING);
+        }
+        break;
+
+      case 'unset':
+        $this->datastreamInfo['dsChecksumType'] = 'DISABLED';
+        break;
+    }
+  }
+
+  /**
+   *  Magic Property that creates NewFedoraDatastream->contentType.
+   *
+   *  This getter/setter lets us access what type of datastream this is
+   *  so that we can ingest it properly.
+   */
+  protected function contentTypeMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['content']['type'];
+        break;
+
+      case 'isset':
+        return TRUE;
+        break;
+
+      case 'set':
+        if ($this->controlGroup == 'M' || $this->controlGroup == 'X') {
+          $type = $this->validateType($value);
+          if ($type !== FALSE) {
+            $this->datastreamInfo['content']['type'] = $type;
+          }
+          else {
+            trigger_error("datastream->contentType type must be one of: file, string, url.", E_USER_WARNING);
+          }
+        }
+        else {
+          trigger_error("Cannot set content of a {$this->controlGroup} datastream, please use datastream->url.", E_USER_WARNING);
+        }
+        break;
+
+      case 'unset':
+        trigger_error("Cannot unset required datastream->contentType property.", E_USER_WARNING);
+        break;
+    }
+  }
+
+  /**
+   *  @see AbstractDatastream::content
+   */
+  protected function contentMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['content']['content'];
+        break;
+
+      case 'isset':
+        return $this->isDatastreamProperySet($this->datastreamInfo['content']['content'], ' ');
+        break;
+
+      case 'set':
+        if ($this->controlGroup == 'M' || $this->controlGroup == 'X') {
+          $this->datastreamInfo['content']['content'] = $value;
+        }
+        else {
+          trigger_error("Cannot set content of a {$this->controlGroup} datastream, please use datastream->url.", E_USER_WARNING);
+        }
+        break;
+
+      case 'unset':
+        if ($this->controlGroup == 'M' || $this->controlGroup == 'X') {
+          $this->datastreamInfo['content']['type'] = 'string';
+          $this->datastreamInfo['content']['content'] = ' ';
+        }
+        else {
+          trigger_error("Cannot unset content of a {$this->controlGroup} datastream, please use datastream->url.", E_USER_WARNING);
+        }
+        break;
+    }
+  }
+
+  /**
+   *  @see AbstractDatastream::url
+   */
+  protected function urlMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
+          return $this->datastreamInfo['content']['content'];
+        }
+        else {
+          trigger_error("Datastream->url property is undefined for a {$this->controlGroup} datastream.", E_USER_WARNING);
+          return NULL;
+        }
+        break;
+
+      case 'isset':
+        if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
+          return TRUE;
+        }
+        else {
+          return FALSE;
+        }
+        break;
+
+      case 'set':
+        if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
+          $this->datastreamInfo['content']['type'] = 'url';
+          $this->datastreamInfo['content']['content'] = $value;
+        }
+        else {
+          trigger_error("Cannot set url of a {$this->controlGroup} datastream, please use datastream->content.", E_USER_WARNING);
+        }
+        break;
+
+      case 'unset':
+        trigger_error("Cannot unset the required datastream->url property.", E_USER_WARNING);
+        break;
+    }
+  }
+
+  /**
+   *  @see AbstractDatastream::setContentFromFile
+   */
+  public function setContentFromFile($file) {
+    if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
+      trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
+      return;
+    }
+    $this->datastreamInfo['content']['type'] = 'file';
+    $this->datastreamInfo['content']['content'] = $file;
+  }
+
+  /**
+   *  @see AbstractDatastream::setContentFromUrl
+   */
+  public function setContentFromUrl($url) {
+    if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
+      trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
+      return;
+    }
+    $this->datastreamInfo['content']['type'] = 'url';
+    $this->datastreamInfo['content']['content'] = $url;
+  }
+
+  /**
+   *  @see AbstractDatastream::setContentFromString
+   */
+  public function setContentFromString($string) {
+    if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
+      trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
+      return;
+    }
+    $this->datastreamInfo['content']['type'] = 'string';
+    $this->datastreamInfo['content']['content'] = $string;
+  }
+}
+
+/**
+ * This abstract class defines some shared functionality between all classes
+ * that implement exising fedora datastreams.
+ */
+abstract class AbstractExistingFedoraDatastream extends AbstractFedoraDatastream {
+
+  /**
+   * The repository this object belongs to.
+   * @var FedoraRepository
+   */
+  public $repository;
+
+  /**
+   * The fedora object this datastream belongs to.
+   * @var FedoraObject
+   */
+  protected $object;
+
+  /**
+   * Class constructor.
+   *
+   * @param string $id
+   *   Unique identifier for the DS.
+   * @param FedoraObject $object
+   *   The FedoraObject that this DS belongs to.
+   * @param FedoraRepository $repository
+   *   The FedoraRepository that this DS belongs to.
+   */
+  public function  __construct($id, FedoraObject $object, FedoraRepository $repository) {
+    parent::__construct($id);
+    $this->repository = $repository;
+    $this->object = $object;
+  }
+
+  /**
+   * Wrapper for the APIA getDatastreamDissemination function.
+   *
+   * @param string $version
+   *   The version fo the content to retreve.
+   *
+   * @return string
+   *   String containing the content.
+   */
+  protected function getDatastreamContent($version = NULL) {
+    return $this->repository->api->a->getDatastreamDissemination($this->object->id, $this->id, $version);
+  }
+
+  /**
+   * Wrapper around the APIM getDatastreamHistory function.
+   *
+   * @return array
+   *   Array containing datastream history.
+   */
+  protected function getDatastreamHistory() {
+    return $this->repository->api->m->getDatastreamHistory($this->object->id, $this->id);
+  }
+
+  /**
+   * Wrapper around the APIM modifyDatastream function.
+   *
+   * @param array $args
+   *   Args to pass to the function.
+   *
+   * @return array
+   *   Datastream history array.
+   */
+  protected function modifyDatastream(array $args) {
+    return $this->repository->api->m->modifyDatastream($this->object->id, $this->id, $args);
+  }
+
+  /**
+   * Wrapper around the APIM Purge function.
+   *
+   * @param string $version
+   *   The version to purge.
+   *
+   * @return array
+   *   The versions purged.
+   */
+  protected function purgeDatastream($version) {
+    return $this->repository->api->m->purgeDatastream($this->object->id, $this->id, array('startDT' => $version, 'endDT' => $version));
+  }
+}
+
+/**
+ * This class implements an old version of a fedora datastream. Its properties
+ * are the same of a normal fedora datastream, except since its an older verion
+ * everything is read only.
+ */
+class FedoraDatastreamVersion extends AbstractExistingFedoraDatastream {
+
+  /**
+   * The parent datastream.
+   * @var FedoraDatastream
+   */
   public $parent;
 
+  /**
+   * The Constructor! Sounds like a superhero doesn't it. Constructor away!
+   */
   public function  __construct($id, array $datastream_info, FedoraDatastream $datastream, FedoraObject $object, FedoraRepository $repository) {
     parent::__construct($id, $object, $repository);
     $this->datastreamInfo = $datastream_info;
     $this->parent = $datastream;
   }
 
+  /**
+   * This function gives us a consistant error across this whole clas.
+   */
   protected function error() {
     trigger_error("All properties of previous datastream versions are read only. Please modify parent datastream object.", E_USER_WARNING);
   }
 
+  /**
+   * Since this whole class is read only, this is a general implementation of
+   * the MagicPropery function that is ready only.
+   */
   protected function generalReadOnly($offset, $unset_val, $function, $value) {
     switch ($function) {
       case 'get':
@@ -198,14 +929,23 @@ class FedoraDatastreamVersion extends AbstractFedoraDatastream {
     }
   }
 
+  /**
+   * @see AbstractDatastream::state
+   */
   protected function stateMagicProperty($function, $value) {
     return $this->generalReadOnly('dsState', NULL, $function, $value);
   }
 
+  /**
+   * @see AbstractDatastream::label
+   */
   protected function labelMagicProperty($function, $value) {
     return $this->generalReadOnly('dsLabel', '', $function, $value);
   }
 
+  /**
+   * @see AbstractDatastream::versionable
+   */
   protected function versionableMagicProperty($function, $value) {
     if (!is_bool($this->datastreamInfo['dsVersionable'])) {
       $this->datastreamInfo['dsVersionable'] = $this->datastreamInfo['dsVersionable'] == 'true' ? TRUE : FALSE;
@@ -213,22 +953,37 @@ class FedoraDatastreamVersion extends AbstractFedoraDatastream {
     return $this->generalReadOnly('dsVersionable', NULL, $function, $value);
   }
 
+  /**
+   * @see AbstractDatastream::mimetype
+   */
   protected function mimetypeMagicProperty($function, $value) {
     return $this->generalReadOnly('dsMIME', '', $function, $value);
   }
 
+  /**
+   * @see AbstractDatastream::format
+   */
   protected function formatMagicProperty($function, $value) {
     return $this->generalReadOnly('dsFormatURI', '', $function, $value);
   }
 
+  /**
+   * @see AbstractDatastream::size
+   */
   protected function sizeMagicProperty($function, $value) {
     return $this->generalReadOnly('dsSize', NULL, $function, $value);
   }
 
+  /**
+   * @see AbstractDatastream::checksum
+   */
   protected function checksumMagicProperty() {
     return $this->generalReadOnly('dsChecksum', 'none', $function, $value);
   }
 
+  /**
+   * @see AbstractDatastream::createDate
+   */
   protected function createdDateMagicProperty($function, $value) {
     if (!$this->datastreamInfo['dsCreateDate'] instanceof FedoraDate) {
       $this->datastreamInfo['dsCreateDate'] = new FedoraDate($this->datastreamInfo['dsCreateDate']);
@@ -236,6 +991,9 @@ class FedoraDatastreamVersion extends AbstractFedoraDatastream {
     return $this->generalReadOnly('dsCreateDate', NULL, $function, $value);
   }
 
+  /**
+   * @see AbstractDatastream::content
+   */
   protected function contentMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -253,39 +1011,89 @@ class FedoraDatastreamVersion extends AbstractFedoraDatastream {
     }
   }
 
+  /**
+   * @see AbstractDatastream::setContentFromFile()
+   */
   public function setContentFromFile($file) {
     $this->error();
   }
 
+  /**
+   * @see AbstractDatastream::setContentFromString()
+   */
   public function setContentFromString($string) {
     $this->error();
   }
 
+  /**
+   * @see AbstractDatastream::setContentFromUrl()
+   */
   public function setContentFromUrl($url) {
     $this->error();
   }
 }
 
-class FedoraDatastream extends AbstractFedoraDatastream implements Countable, ArrayAccess, IteratorAggregate {
+/**
+ * This class implements a fedora datastream.
+ *
+ * It also lets old versions of datastreams be accessed using array notation.
+ * For example to see how many versions of a datastream there are:
+ * @code
+ *   count($datastream)
+ * @endcode
+ *
+ * Old datastreams are indexed newest to oldest. The current version is always
+ * index 0, and older versions are indexed from that. Old versions can be
+ * discarded using the unset command.
+ *
+ * These functions respect datastream locking. If a datastream changes under
+ * your feet then an exception will be raised.
+ */
+class FedoraDatastream extends AbstractExistingFedoraDatastream implements Countable, ArrayAccess, IteratorAggregate {
+
+  /**
+   * An array containing the datastream history.
+   * @var array
+   */
   protected $datastreamHistory = NULL;
+
+  /**
+   * If this is set to TRUE then datastream locking won't be respected. This is
+   * dangerous as any changes could clobber someone elses changes.
+   *
+   * @var boolean
+   */
   public $forceUpdate = FALSE;
 
+  /**
+   * Domo arigato, Mr. Roboto. Constructor.
+   */
   public function __construct($id, FedoraObject $object, FedoraRepository $repository, array $datastream_info = NULL) {
     parent::__construct($id, $object, $repository);
     $this->datastreamInfo = $datastream_info;
   }
 
+  /**
+   * This function clears the datastreams caches, so everything will be
+   * requested directly from fedora again.
+   */
   public function refresh() {
     $this->datastreamInfo = NULL;
     $this->datastreamHistory = NULL;
   }
 
+  /**
+   * This populates datastream history if it needs to be populated.
+   */
   protected function populateDatastreamHistory() {
     if ($this->datastreamHistory === NULL) {
       $this->datastreamHistory = $this->getDatastreamHistory();
     }
   }
 
+  /**
+   * This function uses datastream history to populate datastream info.
+   */
   protected function populateDatastreamInfo() {
     if ($this->datastreamInfo === NULL) {
       $this->datastreamHistory = $this->getDatastreamHistory();
@@ -293,6 +1101,11 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * This function modifies the datastream in fedora while adding the parameters
+   * needed to respect datastram locking and making sure that we keep the
+   * internal class cache of the datastream up to date.
+   */
   protected function modifyDatastream(array $args) {
     $versionable = $this->versionable;
     if (!$this->forceUpdate) {
@@ -309,16 +1122,25 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * A light wrapper around getting the datastream content from fedora.
+   */
   protected function getDatastreamContent($version = NULL) {
     $this->populateDatastreamInfo();
     return parent::getDatastreamContent($version);
   }
 
+  /**
+   * @see AbstractDatastream::controlGroup
+   */
   protected function controlGroupMagicProperty($function, $value) {
     $this->populateDatastreamInfo();
-    parent::controlGroupMagicProperty($function, $value);
+    return parent::controlGroupMagicProperty($function, $value);
   }
 
+  /**
+   * @see AbstractDatastream::state
+   */
   protected function stateMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -346,6 +1168,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * @see AbstractDatastream::label
+   */
   protected function labelMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -368,6 +1193,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * @see AbstractDatastream::versionable
+   */
   protected function versionableMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -397,7 +1225,7 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
   }
 
   /**
-   * @todo add some checking aorund mimetype
+   * @see AbstractDatastream::mimetype
    */
   protected function mimetypeMagicProperty($function, $value) {
     switch ($function) {
@@ -407,13 +1235,16 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
         break;
 
       case 'isset':
-        $this->populateDatastreamInfo();
-        return $this->isDatastreamProperySet($this->datastreamInfo['dsMIME'], '');
+        return TRUE;
         break;
 
       case 'set':
-        // @todo handle parsing errors.
-        $this->modifyDatastream(array('mimeType' => $value));
+        if ($this->validateMimetype($value)) {
+          $this->modifyDatastream(array('mimeType' => $value));
+        }
+        else {
+          trigger_error("Invalid mimetype.", E_USER_WARNING);
+        }
         break;
 
       case 'unset':
@@ -422,6 +1253,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * @see AbstractDatastream::format
+   */
   protected function formatMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -444,6 +1278,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * @see AbstractDatastream::size
+   */
   protected function sizeMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -463,6 +1300,7 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
   }
 
   /**
+   * @see AbstractDatastream::checksum
    * @todo maybe add functionality to set it to auto
    */
   protected function checksumMagicProperty($function, $value) {
@@ -484,6 +1322,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * @see AbstractDatastream::checksumType
+   */
   protected function checksumTypeMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -512,6 +1353,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * @see AbstractDatastream::createdDate
+   */
   protected function createdDateMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -531,7 +1375,8 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
   }
 
   /**
-   * @todo Modify caching depending on size.
+   * @see AbstractDatastream::content
+   * @todo We should perhaps cache this? depending on size?
    */
   protected function contentMagicProperty($function, $value) {
     switch ($function) {
@@ -563,6 +1408,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * @see AbstractDatastream::url
+   */
   protected function urlMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
@@ -601,6 +1449,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     }
   }
 
+  /**
+   * @see AbstractDatastream::setContentFromFile
+   */
   public function setContentFromFile($file) {
     if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
       trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
@@ -609,6 +1460,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     $this->modifyDatastream(array('dsFile' => $file));
   }
 
+  /**
+   * @see AbstractDatastream::setContentFromUrl
+   */
   public function setContentFromUrl($url) {
     if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
       trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
@@ -617,6 +1471,9 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     $this->modifyDatastream(array('dsLocation' => $url));
   }
 
+  /**
+   * @see AbstractDatastream::setContentFromString
+   */
   public function setContentFromString($string) {
     if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
       trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
@@ -625,25 +1482,40 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     $this->modifyDatastream(array('dsString' => $string));
   }
 
+  /**
+   * @see Countable::count
+   */
   public function count() {
     $this->populateDatastreamHistory();
     return count($this->datastreamHistory);
   }
 
+  /**
+   * @see ArrayAccess::offsetExists
+   */
   public function offsetExists ($offset) {
     $this->populateDatastreamHistory();
     return isset($this->datastreamHistory);
   }
 
+  /**
+   * @see ArrayAccess::offsetGet
+   */
   public function offsetGet ($offset) {
     $this->populateDatastreamHistory();
     return new FedoraDatastreamVersion($this->id, $this->datastreamHistory[$offset], $this, $this->object, $this->repository);
   }
 
+  /**
+   * @see ArrayAccess::offsetSet
+   */
   public function offsetSet ($offset, $value) {
     trigger_error("Datastream versions are read only and cannot be set.", E_USER_WARNING);
   }
 
+  /**
+   * @see ArrayAccess::offsetUnset
+   */
   public function offsetUnset ($offset) {
     $this->populateDatastreamHistory();
     if ($this->count() == 1) {
@@ -656,7 +1528,14 @@ class FedoraDatastream extends AbstractFedoraDatastream implements Countable, Ar
     $this->datastreamInfo = $this->datastreamHistory[0];
   }
 
+  /**
+   * IteratorAggregate::getIterator()
+   */
   public function getIterator() {
-    return new ArrayIterator($this);
+    $history = array();
+    foreach ($this->datastreamHistory as $key => $value) {
+      $history[$key] = new FedoraDatastreamVersion($this->id, $value, $this, $this->object, $this->repository);
+    }
+    return new ArrayIterator($history);
   }
 }

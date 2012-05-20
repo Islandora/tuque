@@ -148,7 +148,7 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('D', $this->getValue('objState'));
   }
 
-  public function testObjectGetDS() {
+  public function testObjectGetDs() {
     $this->assertEquals(2, count($this->object));
     $this->assertTrue(isset($this->object['DC']));
     $this->assertTrue(isset($this->object[$this->testDsid]));
@@ -161,6 +161,28 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
       $this->assertTrue(in_array($ds->id, array('DC', $this->testDsid)));
     }
     $this->assertEquals("\n<test> test </test>\n", $this->object[$this->testDsid]->content);
+  }
+
+  public function testObjectIngestDs() {
+    $newds = $this->object->constructDatastream('test', 'M');
+    $newds->label = 'I am a new day!';
+    $this->object->ingestDatastream($newds);
+
+    $this->assertInstanceOf('FedoraDatastream', $newds);
+    $this->assertEquals('I am a new day!', $newds->label);
+    $this->assertEquals('text/xml', $newds->mimetype);
+
+    $result = $this->api->m->getDatastream($this->testPid, 'test');
+    $this->assertInternalType('array', $result);
+  }
+
+  public function testObjectIngestXmlDs() {
+    $newds = $this->object->constructDatastream('test', 'X');
+    $newds->content = '<xml/>';
+    $this->object->ingestDatastream($newds);
+
+    $this->assertInstanceOf('FedoraDatastream', $newds);
+    $this->assertEquals("\n<xml></xml>\n", $newds->content);
   }
 
 }

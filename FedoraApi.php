@@ -48,6 +48,8 @@ class FedoraApi {
 
     $this->a = new FedoraApiA($connection, $serializer);
     $this->m = new FedoraApiM($connection, $serializer);
+
+    $this->connection = $connection;
   }
 }
 

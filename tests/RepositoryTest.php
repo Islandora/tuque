@@ -19,11 +19,11 @@ class RepositoryTest extends PHPUnit_Framework_TestCase {
 
   public function testIngestNamespace() {
     $namespace = FedoraTestHelpers::randomString(10);
-    $object = $this->repository->constructNewObject($namespace);
+    $object = $this->repository->constructObject($namespace);
     $object->label = 'foo';
     $object->state = 'd';
     $object->owner = 'woot';
-    $this->repository->ingestNewObject($object);
+    $this->repository->ingestObject($object);
     $this->assertTrue($object instanceof FedoraObject);
     $this->assertEquals('foo', $object->label);
     $this->assertEquals('D', $object->state);
@@ -32,12 +32,12 @@ class RepositoryTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testIngestNoParams() {
-    $object = $this->repository->constructNewObject();
+    $object = $this->repository->constructObject();
     $id = $object->id;
     $object->label = 'foo';
     $object->state = 'd';
     $object->owner = 'woot';
-    $this->repository->ingestNewObject($object);
+    $this->repository->ingestObject($object);
     $this->assertTrue($object instanceof FedoraObject);
     $this->assertEquals($id, $object->id);
     $this->assertEquals('foo', $object->label);
@@ -50,11 +50,11 @@ class RepositoryTest extends PHPUnit_Framework_TestCase {
     $namespace = FedoraTestHelpers::randomString(10);
     $localid = FedoraTestHelpers::randomString(10);
     $id = "$namespace:$localid";
-    $object = $this->repository->constructNewObject($id);
+    $object = $this->repository->constructObject($id);
     $object->label = 'foo';
     $object->state = 'd';
     $object->owner = 'woot';
-    $this->repository->ingestNewObject($object);
+    $this->repository->ingestObject($object);
     $this->assertTrue($object instanceof FedoraObject);
     $this->assertEquals('foo', $object->label);
     $this->assertEquals('D', $object->state);

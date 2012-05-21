@@ -8,7 +8,7 @@ class FedoraRelationshipsExternalTest extends PHPUnit_Framework_TestCase {
     $this->api = new FedoraApi($connection);
     $cache = new SimpleCache();
     $repository = new FedoraRepository($this->api, $cache);
-    $this->object = $repository->constructNewObject('test:awesome');
+    $this->object = $repository->constructObject('test:awesome');
 
     $this->object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasAwesomeness', 'jonathan:green');
     $this->object->relationships->add(FEDORA_MODEL_URI, 'hasModel', 'islandora:model');

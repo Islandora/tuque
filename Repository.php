@@ -5,6 +5,7 @@
  * defines a concrete implementation for Fedora.
  */
 
+require_once "RepositoryQuery.php";
 require_once "FoxmlDocument.php";
 require_once "Object.php";
 
@@ -12,23 +13,8 @@ require_once "Object.php";
  * An abstract repository interface.
  *
  * This can be used to override the implementation of the Repository.
- *
- * Instantantiated children of this abstract class allow objects to be accessed
- * as an array for example to get an object:
- * @code
- *   $object = $repository['objectid'];
- * @endcode
- *
- * To test if an object exists (returns a BOOLEAN):
- * @code
- *   $exists = isset($repository['objectid']);
- * @endcode
- *
- * Assignment and the unset function are not supported. This functionality is
- * just a helper, and the same functionaluty can be accessed by calling class
- * member functions.
  */
-abstract class AbstractRepository extends MagicProperty implements ArrayAccess {
+abstract class AbstractRepository extends MagicProperty {
 
   /**
    * This method is a factory that will return a new repositoryobject object
@@ -46,7 +32,7 @@ abstract class AbstractRepository extends MagicProperty implements ArrayAccess {
    *   This object will not actually be created in the repository until the
    *   ingest method is called.
    */
-  abstract public function constructNewObject($id = NULL);
+  abstract public function constructObject($id = NULL);
 
   /**
    * This ingests a new object into the repository.
@@ -59,7 +45,7 @@ abstract class AbstractRepository extends MagicProperty implements ArrayAccess {
    * @return AbstractObject
    *   The ingested abstract object.
    */
-  abstract public function ingestNewObject(NewFedoraObject &$object);
+  abstract public function ingestObject(NewFedoraObject &$object);
 
   /**
    * Gets a object from the repository.
@@ -90,7 +76,7 @@ abstract class AbstractRepository extends MagicProperty implements ArrayAccess {
   /**
    * Search the repository for objects.
    *
-   * This function isn't fully implemented yet.
+   * This function isn't implemented yet.
    *
    * @todo Flesh out the function definition for this.
    */
@@ -110,10 +96,17 @@ class FedoraRepository extends AbstractRepository {
   /**
    * This is an instantiated AbstractCache that we use to make sure we aren't
    * instantiating the same objects over and over.
-   * 
+   *
    * @var AbstractCache
    */
   protected $cache;
+
+  /**
+   * This provides some convientent methods for searching the resource index.
+   *
+   * @var RepositoryQuery
+   */
+  public $ri;
 
   /**
    * Constructor for the FedoraRepository Object.
@@ -127,12 +120,10 @@ class FedoraRepository extends AbstractRepository {
   public function __construct(FedoraApi $api, AbstractCache $cache) {
     $this->api = $api;
     $this->cache = $cache;
+    $this->ri = new RepositoryQuery($this->api->connection);
   }
 
   /**
-   * Find objects in the Repository.
-   *
-   * @param array $search
    * @see AbstractRepository::findObjects
    */
   public function findObjects(array $search) {
@@ -142,16 +133,16 @@ class FedoraRepository extends AbstractRepository {
    * @todo validate the ID
    * @todo catch the getNextPid errors
    *
-   * @see AbstractRepository::constructNewObject
+   * @see AbstractRepository::constructObject
    */
-  public function constructNewObject($id = NULL) {
-    if($this->cache->get($id) !== FALSE) {
+  public function constructObject($id = NULL) {
+    if ($this->cache->get($id) !== FALSE) {
       return FALSE;
     }
 
     $exploded = explode(':', $id);
 
-    if(!$id) {
+    if (!$id) {
       $id = $this->api->m->getNextPid();
     }
     elseif (count($exploded) == 1) {
@@ -161,10 +152,11 @@ class FedoraRepository extends AbstractRepository {
     return new NewFedoraObject($id, $this);
   }
 
-  /*
+  /**
+   * @see AbstractRepository::ingestObject()
    * @todo error handling
    */
-  public function ingestNewObject(NewFedoraObject &$object) {
+  public function ingestObject(NewFedoraObject &$object) {
     $dom = new FoxmlDocument($object);
     $xml = $dom->saveXml();
     $id = $this->api->m->ingest(array('string' => $xml));
@@ -173,9 +165,14 @@ class FedoraRepository extends AbstractRepository {
     return $object;
   }
 
+  /**
+   * @see AbstractRepository::ingestObject()
+   * @todo perhaps we should check if an object exists instead of catching
+   *   the exception
+   */
   public function getObject($id) {
     $object = $this->cache->get($id);
-    if($object !== FALSE) {
+    if ($object !== FALSE) {
       return $object;
     }
 
@@ -185,9 +182,9 @@ class FedoraRepository extends AbstractRepository {
       return $object;
     }
     catch (RepositoryException $e) {
-      // check to see if its a 401 or a 404
+      // Check to see if its a 401 or a 404.
       $previous = $e->getPrevious();
-      if($previous && ($previous->getCode == 404 || $previous->getCode == 401)) {
+      if ($previous && ($previous->getCode == 404 || $previous->getCode == 401)) {
         return NULL;
       }
       else {
@@ -197,9 +194,12 @@ class FedoraRepository extends AbstractRepository {
     }
   }
 
+  /**
+   * @see AbstractRepository::purgeObject()
+   */
   public function purgeObject($id) {
     $object = $this->cache->get($id);
-    if($object !== FALSE) {
+    if ($object !== FALSE) {
       $this->cache->delete($id);
     }
 
@@ -211,9 +211,4 @@ class FedoraRepository extends AbstractRepository {
       throw $e;
     }
   }
-
-  public function offsetExists ( $offset ) {}
-  public function offsetGet ( $offset ) {}
-  public function offsetSet ( $offset , $value ) {}
-  public function offsetUnset ( $offset ) {}
 }

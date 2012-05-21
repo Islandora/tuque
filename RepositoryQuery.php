@@ -44,14 +44,17 @@ class RepositoryQuery {
       // Built a single result.
       $r = array();
       foreach ($result->children() as $element) {
-        $val = NULL;
+        $val = array();
 
         $attrs = $element->attributes();
         if (!empty($attrs['uri'])) {
-          $val = self::pidUriToBarePid((string) $attrs['uri']);
+          $val['value'] = self::pidUriToBarePid((string) $attrs['uri']);
+          $val['uri'] = (string) $attrs['uri'];
+          $val['type'] = 'pid';
         }
         else {
-          $val = (string) $element;
+          $val['type'] = 'literal';
+          $val['value'] = (string) $element;
         }
 
         // Map the name to the value in the array.

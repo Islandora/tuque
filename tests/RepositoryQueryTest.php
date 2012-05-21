@@ -18,8 +18,8 @@ class RepositoryQueryTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testItql() {
-    $query = 'select $label from <#ri>
-where $subject <fedora-model:label> $label';
+    $query = 'select $pid $label from <#ri>
+where $pid <fedora-model:label> $label';
     $results = $this->repository->ri->itqlQuery($query);
     $this->assertTrue(TRUE);
   }

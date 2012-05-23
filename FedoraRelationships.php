@@ -127,7 +127,7 @@ class FedoraRelationships {
    * @param boolean $literal
    *   Specifies if the object is a literal or not.
    */
-  public function add($subject, $predicate_uri, $predicate, $object, $literal = FALSE) {
+  protected function internalAdd($subject, $predicate_uri, $predicate, $object, $literal = FALSE) {
     $document = $this->getDom();
     $xpath = $this->getXpath($document);
 
@@ -237,7 +237,7 @@ class FedoraRelationships {
    *   )
    *   @endcode
    */
-  public function get($subject, $predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
+  protected function internalGet($subject, $predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
     $document = $this->getDom();
     $xpath = $this->getXpath($document);
 
@@ -297,7 +297,7 @@ class FedoraRelationships {
    * @return boolean
    *   TRUE if relationships were removed, FALSE otherwise.
    */
-  public function remove($subject, $predicate_uri, $predicate, $object, $literal = FALSE) {
+  protected function internalRemove($subject, $predicate_uri, $predicate, $object, $literal = FALSE) {
     $return = FALSE;
     $document = $this->getDom();
     $xpath = $this->getXpath($document);
@@ -384,7 +384,7 @@ class FedoraRelsExt extends FedoraRelationships {
    */
   public function add($predicate_uri, $predicate, $object, $literal = FALSE) {
     $this->initializeDatastream();
-    parent::add($this->object->id, $predicate_uri, $predicate, $object, $literal);
+    parent::internalAdd($this->object->id, $predicate_uri, $predicate, $object, $literal);
 
     if ($this->new) {
       $this->object->ingestDatastream($this->datastream);
@@ -411,7 +411,7 @@ class FedoraRelsExt extends FedoraRelationships {
    */
   public function remove($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
     $this->initializeDatastream();
-    $return = parent::remove($this->object->id, $predicate_uri, $predicate, $object, $literal);
+    $return = parent::internalRemove($this->object->id, $predicate_uri, $predicate, $object, $literal);
 
     if ($this->new && $return) {
       $this->object->ingestDatastream($this->datastream);
@@ -463,7 +463,7 @@ class FedoraRelsExt extends FedoraRelationships {
    */
   public function get($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
     $this->initializeDatastream();
-    return parent::get($this->object->id, $predicate_uri, $predicate, $object, $literal);
+    return parent::internalget($this->object->id, $predicate_uri, $predicate, $object, $literal);
   }
 }
 
@@ -522,7 +522,7 @@ class FedoraRelsInt extends FedoraRelationships {
    */
   public function add($predicate_uri, $predicate, $object, $literal = FALSE) {
     $this->initializeDatastream();
-    parent::add("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
+    parent::internalAdd("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
 
     if ($this->new) {
       $this->aboutDs->parent->ingestDatastream($this->datastream);
@@ -549,7 +549,7 @@ class FedoraRelsInt extends FedoraRelationships {
    */
   public function remove($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
     $this->initializeDatastream();
-    $return = parent::remove("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
+    $return = parent::internalRemove("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
 
     if ($this->new && $return) {
       $this->aboutDs->parent->ingestDatastream($this->datastream);
@@ -601,6 +601,6 @@ class FedoraRelsInt extends FedoraRelationships {
    */
   public function get($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
     $this->initializeDatastream();
-    return parent::get("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
+    return parent::internalGet("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
   }
 }

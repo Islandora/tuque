@@ -23,16 +23,14 @@ XML;
     $cache = new SimpleCache();
     $repository = new FedoraRepository($this->api, $cache);
     $object = $repository->constructObject("test:test");
-    $datastream = $object->constructDatastream('RELS-INT', 'M');
-    $rel = new FedoraRelationships();
-    $rel->datastream = $datastream;
+    $rel = $object->relationships;
 
     $rel->registerNamespace('fuckyah', 'http://crazycool.com#');
-    $rel->add('one', 'http://crazycool.com#', 'woot', 'test', TRUE);
+    $rel->add('http://crazycool.com#', 'woot', 'test', TRUE);
 
-    $this->assertXmlStringEqualsXmlString($expected, $datastream->content);
+    //$this->assertXmlStringEqualsXmlString($expected, $object['RELS-EXT']->content);
 
-    $relationships = $rel->get('one');
+    $relationships = $rel->get();
     $this->assertEquals(1, count($relationships));
     $this->assertEquals('fuckyah', $relationships[0]['predicate']['alias']);
     $this->assertEquals('http://crazycool.com#', $relationships[0]['predicate']['namespace']);
@@ -45,7 +43,7 @@ XML;
     $content = <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fuckyah="http://crazycool.com#">
-  <description rdf:about="info:fedora/one">
+  <description rdf:about="info:fedora/test:test">
     <fuckyah:woot>test</fuckyah:woot>
   </description>
 </RDF>
@@ -54,7 +52,7 @@ XML;
     $expected = <<<XML
 <?xml version="1.0" encoding="UTF-8"?>
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fuckyah="http://crazycool.com#">
-  <description rdf:about="info:fedora/one">
+  <description rdf:about="info:fedora/test:test">
     <fuckyah:woot>test</fuckyah:woot>
     <fuckyah:woot>1234</fuckyah:woot>
   </description>
@@ -65,12 +63,14 @@ XML;
     $cache = new SimpleCache();
     $repository = new FedoraRepository($this->api, $cache);
     $object = $repository->constructObject("test:test");
-    $datastream = $object->constructDatastream('RELS-INT', 'M');
+    $datastream = $object->constructDatastream('RELS-EXT', 'M');
     $datastream->content = $content;
-    $rel = new FedoraRelationships();
-    $rel->datastream = $datastream;
+    $object->ingestDatastream($datastream);
 
-    $rel->add('one', 'http://crazycool.com#', 'woot', '1234', TRUE);
-    $this->assertXmlStringEqualsXmlString($expected, $datastream->content);
+    $object->relationships->add('http://crazycool.com#', 'woot', '1234', TRUE);
+    $rels = $object->relationships->get();
+    $this->assertEquals(2, count($rels));
+    $this->assertEquals('test', $rels[0]['object']['value']);
+    $this->assertEquals('1234', $rels[1]['object']['value']);
   }
 }

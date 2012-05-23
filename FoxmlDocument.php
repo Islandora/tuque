@@ -39,14 +39,11 @@ class FoxmlDocument extends DOMDocument {
   private function createDocument() {
     /**
      * If DOMNodes are not appended in the corrected order root -> leaf, namespaces may break...
-     * So be be cautious, add DOMNode's to thier parent element before adding child elements to them.
+     * So be be cautious, add DOMNodes to their parent element before adding child elements to them.
      */
     $this->createObjectProperties();
-    //$this->createRelationships();
-    //$this->createIngestFileDatastreams();
     //$this->createPolicy();
-    //$this->createDocumentDatastream();
-    //$this->createDublinCoreDatastream();
+    $this->createDocumentDatastreams();
     //$this->createCollectionPolicy();
     //$this->createWorkflowStream();
   }
@@ -70,7 +67,7 @@ class FoxmlDocument extends DOMDocument {
     $property->setAttribute('VALUE', $this->object->label);
     $object_properties->appendChild($property);
 
-    if(isset($this->object->owner)) {
+    if (isset($this->object->owner)) {
       $property = $this->createElementNS(self::FOXML, 'foxml:property');
       $property->setAttribute('NAME', 'info:fedora/fedora-system:def/model#ownerId');
       $property->setAttribute('VALUE', $this->object->owner);
@@ -78,80 +75,6 @@ class FoxmlDocument extends DOMDocument {
     }
 
     return $object_properties;
-  }
-
-  /*
-   * @todo clean this up. we need relationships, but not yet.
-  private function createRelationships() {
-    $datastream = $this->createDatastreamElement('RELS-EXT', NULL, 'X');
-    $version = $this->createDatastreamVersionElement('RELS-EXT.0', 'RDF Statements about this Object', 'application/rdf+xml', 'info:fedora/fedora-system:FedoraRELSExt-1.0');
-    $content = $this->createDatastreamContentElement();
-
-    $rdf = $this->createElementNS(self::rdf, 'rdf:RDF');
-    $rdf->setAttributeNS(self::xmlns, 'xmlns:rdf', self::rdf);
-    $rdf->setAttributeNS(self::xmlns, 'xmlns:rdfs', self::rdfs);
-    $rdf->setAttributeNS(self::xmlns, 'xmlns:fedora', self::fedora);
-    $rdf->setAttributeNS(self::xmlns, 'xmlns:dc', self::dc);
-    $rdf->setAttributeNS(self::xmlns, 'xmlns:oai_dc', self::oai_dc);
-    $rdf->setAttributeNS(self::xmlns, 'xmlns:fedora-model', self::fedora_model);
-
-    $rdf_description = $this->createElementNS(self::rdf, 'rdf:Description');
-    $rdf_description->setAttributeNS(self::rdf, 'rdf:about', "info:fedora/{$this->pid}");
-
-    $member = $this->createElementNS(self::fedora, "fedora:{$this->relationship}");
-    $member->setAttributeNS(self::rdf, 'rdf:resource', "info:fedora/{$this->collectionPid}");
-
-    $has_rdf_model = $this->createElementNS(self::fedora_model, 'fedora-model:hasModel');
-    $has_rdf_model->setAttributeNS(self::rdf, "rdf:resource", "info:fedora/{$this->contentModelPid}");
-
-    $this->root->appendChild($datastream)->appendChild($version)->appendChild($content);
-    $content->appendChild($rdf)->appendChild($rdf_description);
-    $rdf_description->appendChild($member);
-    $rdf_description->appendChild($has_rdf_model);
-  }
-
-  private function createIngestFileDatastreams() {
-    if (empty($this->ingestFileLocation))
-      return;
-
-    list($label, $mime_type, $file_url) = $this->getFileAttributes($this->ingestFileLocation);
-    $datastream = $this->createDatastreamElement('OBJ', 'A', 'M');
-    $version = $this->createDatastreamVersionElement('OBJ.0', $label, $mime_type);
-    $content = $this->createDatastreamContentLocationElement('URL', $file_url);
-    $this->root->appendChild($datastream)->appendChild($version)->appendChild($content);
-
-    if (!empty($_SESSION['fedora_ingest_files'])) {
-      foreach ($_SESSION['fedora_ingest_files'] as $dsid => $created_file) {
-        if (!empty($this->ingestFileLocation)) {
-          $found = strstr($created_file, $this->ingestFileLocation);
-          if ($found !== FALSE) {
-            $created_file = $found;
-          }
-        }
-        list($label, $mime_type, $file_url) = $this->getFileAttributes($created_file);
-        $datastream = $this->createDatastreamElement($dsid, 'A', 'M');
-        $version = $this->createDatastreamVersionElement("$dsid.0", $label, $mime_type);
-        $content = $this->createDatastreamContentLocationElement('URL', $file_url);
-        $this->root->appendChild($datastream)->appendChild($version)->appendChild($content);
-      }
-    }
-  }
-
-  private function getFileAttributes($file) {
-    global $base_url;
-    module_load_include('inc', 'fedora_repository', 'MimeClass');
-    $mime = new MimeClass();
-    $mime_type = $mime->getType($file);
-    $parts = explode('/', $file);
-    foreach ($parts as $n => $part) {
-      $parts[$n] = rawurlencode($part);
-    }
-    $path = implode('/', $parts);
-    $file_url = $base_url . '/' . $path;
-    $beginIndex = strrpos($file_url, '/');
-    $dtitle = substr($file_url, $beginIndex + 1);
-    $dtitle = urldecode($dtitle);
-    return array($dtitle, $mime_type, $file_url);
   }
 
   private function createPolicy() {
@@ -167,7 +90,7 @@ class FoxmlDocument extends DOMDocument {
   private function getPolicyStreamElement() {
     module_load_include('inc', 'fedora_repository', 'ObjectHelper');
     $object_helper = new ObjectHelper();
-    $policy_stream = $object_helper->getStream($this->collectionPid, 'CHILD_SECURITY', FALSE);
+    $policy_stream = $object_helper->getStream($this->object->collectionPid, 'CHILD_SECURITY', FALSE);
     if (!isset($policy_stream)) {
       return NULL; //there is no policy stream so object will not have a policy stream
     }
@@ -213,7 +136,7 @@ class FoxmlDocument extends DOMDocument {
     }
   }
 
-  private function createDatastreamElement($id = NULL, $state = NULL, $control_group = NULL) {
+  private function createDatastreamElement($id = NULL, $state = NULL, $control_group = NULL, $versionable = NULL) {
     $datastream = $this->createElementNS(self::FOXML, 'foxml:datastream');
     if (isset($id)) {
       $datastream->setAttribute('ID', $id);
@@ -223,6 +146,9 @@ class FoxmlDocument extends DOMDocument {
     }
     if (isset($control_group)) {
       $datastream->setAttribute('CONTROL_GROUP', $control_group);
+    }
+    if (isset($versionable)) {
+      $datastream->setAttribute('VERSIONABLE', $versionable);
     }
     return $datastream;
   }
@@ -242,6 +168,17 @@ class FoxmlDocument extends DOMDocument {
       $version->setAttribute('FORMAT_URI', $format_uri);
     }
     return $version;
+  }
+
+  private function createDatastreamDigestElement($type = NULL, $digest = NULL) {
+    $digest = $this->createElementNS(self::FOXML, 'foxml:contentDigest');
+    if (isset($type)) {
+      $digest->setAttribute('TYPE', $type);
+    }
+    if (isset($digest)) {
+      $digest->setAttribute('DIGEST', $digest);
+    }
+    return $digest;
   }
 
   private function createDatastreamContentElement() {
@@ -279,41 +216,69 @@ class FoxmlDocument extends DOMDocument {
     }
   }
 
-  public function createDocumentDatastream() {
-    $datastream = $this->createDatastreamElement($this->dsid, 'A', 'X');
-    $version = $this->createDatastreamVersionElement("{$this->dsid}.0", "{$this->dsid} Record", 'text/xml');
-    $content = $this->createDatastreamContentElement();
-    $node = $this->importNode($this->document->documentElement, TRUE);
-    $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($node);
-    // Once again god damn you libxml...
-    $class = get_class($this->document);
-    $namespaces = call_user_func(array($class, 'getRequiredNamespaces'));
-    foreach($namespaces as $prefix => $uri) {
-      $node->setAttributeNS(self::xmlns, "xmlns:$prefix", $uri);
+  /**
+   * Checks that the content and dsid are valid and then passes the FOXML creation off
+   * to the relevant function. Currently any 'string' content that is marked as a managed
+   * datastream will be ingested as inline.
+   * 
+   * @todo Implement fedora upload function to allow strings to be added as managed datastreams
+   */
+  public function createDocumentDatastreams() {
+    foreach ($this->object as $ds) {
+      if (!isset($ds->id) || strlen($ds->content) < 1) {
+        return "";
+      }
+      if ($ds->contentType == 'string') {
+          $this->createInlineDocumentDatastream($ds);
+      }
+      else {
+        $this->createDocumentDatastream($ds);
+      }
     }
   }
 
-  private function createDublinCoreDatastream() {
-    $datastream = $this->createDatastreamElement('DC', 'A', 'X');
-    $version = $this->createDatastreamVersionElement('DC.0', 'Dublic Core Record', 'text/xml');
+  /**
+   * Creates FOXML for any inline datastreams based on the information passed in the $ds object.
+   * 
+   * @param object $ds
+   *   The datastream object 
+   */
+  private function createInlineDocumentDatastream($ds) {
+    $datastream = $this->createDatastreamElement($ds->id, $ds->state, $ds->controlGroup, $ds->versionable);
+    $version = $this->createDatastreamVersionElement("{$ds->id}.0", $ds->label, $ds->mimetype, $ds->format);
     $content = $this->createDatastreamContentElement();
-    $dublin_core = $this->applyTransformation();
-    $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($dublin_core);
-    $dublin_core->setAttributeNS(self::xmlns, 'xmlns:xsi', self::xsi); // GOD Damn you libxml!
+    $xml_dom = new DOMDocument();
+    $xml_dom->loadXML($ds->content);
+    $child = $this->importNode($xml_dom->documentElement, TRUE);
+    $version_node = $this->root->appendChild($datastream)->appendChild($version);
+    if (isset($ds->checksumType)) {
+      $digest = $this->createDatastreamDigestElement($ds->checksumType, $ds->checksum);
+      $version_node->appendChild($digest);
+    }
+    $version_node->appendChild($content)->appendChild($child);
+    // Once again god damn you libxml...
+    $class = get_class($ds->content);
+    $namespaces = call_user_func(array($class, 'getRequiredNamespaces'));
+    foreach ($namespaces as $prefix => $uri) {
+      $child->setAttributeNS(self::xmlns, "xmlns:$prefix", $uri);
+    }
   }
 
-
-  private function applyTransformation() {
-    $xsl = new DOMDocument();
-    $xsl->load($this->transform);
-    $xslt = new XSLTProcessor();
-    $xslt->importStyleSheet($xsl);
-    $document = new DOMDocument();
-    $document->loadXML($this->document->saveXML());
-    $document = $xslt->transformToDoc($document->documentElement);
-    return $this->importNode($document->documentElement, TRUE);
+  /**
+   * Creates FOXML for any managed, externally referenced or redirect datastreams bases on the $ds object
+   * 
+   * @param object $ds
+   *   The datastream object 
+   */
+  private function createDocumentDatastream($ds) {
+    $datastream = $this->createDatastreamElement($ds->id, $ds->state, $ds->controlGroup, $ds->versionable);
+    $version = $this->createDatastreamVersionElement($ds->id . '.0', $ds->label, $ds->mimetype, $ds->format);
+    $content = $this->createDatastreamContentLocationElement('URL', $ds->content);
+    $version_node = $this->root->appendChild($datastream)->appendChild($version);
+    if (isset($ds->checksumType)) {
+      $digest = $this->createDatastreamDigestElement($ds->checksumType, $ds->checksum);
+      $version_node->appendChild($digest);
+    }
+    $version_node->appendChild($content);
   }
-
- */
-
 }

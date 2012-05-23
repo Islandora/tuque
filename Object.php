@@ -7,6 +7,7 @@
 require_once 'MagicProperty.php';
 require_once 'FedoraDate.php';
 require_once 'Datastream.php';
+require_once 'FedoraRelationships.php';
 
 /**
  * An abstract class defining a Object in the repository. This is the class

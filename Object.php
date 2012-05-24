@@ -146,7 +146,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
    * The repository this object belongs to.
    * @var FedoraRepository
    */
-  protected $repository;
+  public $repository;
 
   /**
    * The ID of this object.
@@ -611,7 +611,12 @@ class FedoraObject extends AbstractFedoraObject {
   protected function modelsMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
-        return $this->objectProfile['objModels'];
+        $models = array();
+        // Cut off info:fedora/.
+        foreach($this->objectProfile['objModels'] as $model) {
+          $models[] = substr($model, 12);
+        }
+        return $models;
         break;
 
       case 'isset':

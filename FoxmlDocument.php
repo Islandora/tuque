@@ -77,64 +77,64 @@ class FoxmlDocument extends DOMDocument {
     return $object_properties;
   }
 
-  private function createPolicy() {
-    $policy_element = $this->getPolicyStreamElement();
-    if ($policy_element) {
-      $datastream = $this->createDatastreamElement('POLICY', 'A', 'X');
-      $version = $this->createDatastreamVersionElement('POLICY.0', 'POLICY', 'text/xml');
-      $content = $this->createDatastreamContentElement();
-      $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($policy_element);
-    }
-  }
-
-  private function getPolicyStreamElement() {
-    module_load_include('inc', 'fedora_repository', 'ObjectHelper');
-    $object_helper = new ObjectHelper();
-    $policy_stream = $object_helper->getStream($this->object->collectionPid, 'CHILD_SECURITY', FALSE);
-    if (!isset($policy_stream)) {
-      return NULL; //there is no policy stream so object will not have a policy stream
-    }
-    try {
-      $xml = new SimpleXMLElement($policy_stream);
-    } catch (Exception $exception) {
-      watchdog(t("Fedora_Repository"), t("Problem getting security policy."), NULL, WATCHDOG_ERROR);
-      drupal_set_message(t('Problem getting security policy: !e', array('!e' => $exception->getMessage())), 'error');
-      return FALSE;
-    }
-    $policy_element = $this->createDocumentFragment();
-    if (!$policy_element) {
-      drupal_set_message(t('Error parsing security policy stream.'));
-      watchdog(t("Fedora_Repository"), t("Error parsing security policy stream, could not parse policy stream."), NULL, WATCHDOG_NOTICE);
-      return FALSE;
-    }
-    $this->importNode($policy_element, TRUE);
-    $value = $policy_element->appendXML($policy_stream);
-    if (!$value) {
-      drupal_set_message(t('Error creating security policy stream.'));
-      watchdog(t("Fedora_Repository"), t("Error creating security policy stream, could not parse collection policy template file."), NULL, WATCHDOG_NOTICE);
-      return FALSE;
-    }
-    return $policy_element;
-  }
-
-  private function createCollectionPolicy() {
-    module_load_include('inc', 'fedora_repository', 'api/fedora_item');
-    $fedora_item = new fedora_item($this->contentModelPid);
-    $datastreams = $fedora_item->get_datastreams_list_as_array();
-    if (isset($datastreams['COLLECTION_POLICY_TMPL'])) {
-      $collection_policy_template = $fedora_item->get_datastream_dissemination('COLLECTION_POLICY_TMPL');
-      $collection_policy_template_dom = DOMDocument::loadXML($collection_policy_template);
-      $collection_policy_template_root = $collection_policy_template_dom->getElementsByTagName('collection_policy');
-      if ($collection_policy_template_root->length > 0) {
-        $collection_policy_template_root = $collection_policy_template_root->item(0);
-        $node = $this->importNode($collection_policy_template_root, TRUE);
-        $datastream = $this->createDatastreamElement('COLLECTION_POLICY', 'A', 'X');
-        $version = $this->createDatastreamVersionElement('COLLECTION_POLICY.0', 'Collection Policy', 'text/xml');
-        $content = $this->createDatastreamContentElement();
-        $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($node);
-      }
-    }
-  }
+//  private function createPolicy() {
+//    $policy_element = $this->getPolicyStreamElement();
+//    if ($policy_element) {
+//      $datastream = $this->createDatastreamElement('POLICY', 'A', 'X');
+//      $version = $this->createDatastreamVersionElement('POLICY.0', 'POLICY', 'text/xml');
+//      $content = $this->createDatastreamContentElement();
+//      $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($policy_element);
+//    }
+//  }
+//
+//  private function getPolicyStreamElement() {
+//    module_load_include('inc', 'fedora_repository', 'ObjectHelper');
+//    $object_helper = new ObjectHelper();
+//    $policy_stream = $object_helper->getStream($this->object->collectionPid, 'CHILD_SECURITY', FALSE);
+//    if (!isset($policy_stream)) {
+//      return NULL; //there is no policy stream so object will not have a policy stream
+//    }
+//    try {
+//      $xml = new SimpleXMLElement($policy_stream);
+//    } catch (Exception $exception) {
+//      watchdog(t("Fedora_Repository"), t("Problem getting security policy."), NULL, WATCHDOG_ERROR);
+//      drupal_set_message(t('Problem getting security policy: !e', array('!e' => $exception->getMessage())), 'error');
+//      return FALSE;
+//    }
+//    $policy_element = $this->createDocumentFragment();
+//    if (!$policy_element) {
+//      drupal_set_message(t('Error parsing security policy stream.'));
+//      watchdog(t("Fedora_Repository"), t("Error parsing security policy stream, could not parse policy stream."), NULL, WATCHDOG_NOTICE);
+//      return FALSE;
+//    }
+//    $this->importNode($policy_element, TRUE);
+//    $value = $policy_element->appendXML($policy_stream);
+//    if (!$value) {
+//      drupal_set_message(t('Error creating security policy stream.'));
+//      watchdog(t("Fedora_Repository"), t("Error creating security policy stream, could not parse collection policy template file."), NULL, WATCHDOG_NOTICE);
+//      return FALSE;
+//    }
+//    return $policy_element;
+//  }
+//
+//  private function createCollectionPolicy() {
+//    module_load_include('inc', 'fedora_repository', 'api/fedora_item');
+//    $fedora_item = new fedora_item($this->contentModelPid);
+//    $datastreams = $fedora_item->get_datastreams_list_as_array();
+//    if (isset($datastreams['COLLECTION_POLICY_TMPL'])) {
+//      $collection_policy_template = $fedora_item->get_datastream_dissemination('COLLECTION_POLICY_TMPL');
+//      $collection_policy_template_dom = DOMDocument::loadXML($collection_policy_template);
+//      $collection_policy_template_root = $collection_policy_template_dom->getElementsByTagName('collection_policy');
+//      if ($collection_policy_template_root->length > 0) {
+//        $collection_policy_template_root = $collection_policy_template_root->item(0);
+//        $node = $this->importNode($collection_policy_template_root, TRUE);
+//        $datastream = $this->createDatastreamElement('COLLECTION_POLICY', 'A', 'X');
+//        $version = $this->createDatastreamVersionElement('COLLECTION_POLICY.0', 'Collection Policy', 'text/xml');
+//        $content = $this->createDatastreamContentElement();
+//        $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($node);
+//      }
+//    }
+//  }
 
   private function createDatastreamElement($id = NULL, $state = NULL, $control_group = NULL, $versionable = NULL) {
     $datastream = $this->createElementNS(self::FOXML, 'foxml:datastream');
@@ -170,13 +170,13 @@ class FoxmlDocument extends DOMDocument {
     return $version;
   }
 
-  private function createDatastreamDigestElement($type = NULL, $digest = NULL) {
+  private function createDatastreamDigestElement($type = NULL, $checksum = NULL) {
     $digest = $this->createElementNS(self::FOXML, 'foxml:contentDigest');
     if (isset($type)) {
       $digest->setAttribute('TYPE', $type);
     }
     if (isset($digest)) {
-      $digest->setAttribute('DIGEST', $digest);
+      $digest->setAttribute('DIGEST', $checksum);
     }
     return $digest;
   }
@@ -197,24 +197,24 @@ class FoxmlDocument extends DOMDocument {
     return $location;
   }
 
-  private function createWorkflowStream() {
-    module_load_include('inc', 'fedora_repository', 'api/fedora_item');
-    $fedora_item = new fedora_item($this->contentModelPid);
-    $datastreams = $fedora_item->get_datastreams_list_as_array();
-    if (isset($datastreams['WORKFLOW_TMPL'])) {
-      $work_flow_template = $fedora_item->get_datastream_dissemination('WORKFLOW_TMPL');
-      $work_flow_template_dom = DOMDocument::loadXML($work_flow_template);
-      $work_flow_template_root = $work_flow_template_dom->getElementsByTagName('workflow');
-      if ($work_flow_template_root->length > 0) {
-        $work_flow_template_root = $work_flow_template_root->item(0);
-        $node = $this->importNode($work_flow_template_root, TRUE);
-        $datastream = $this->createDatastreamElement('WORKFLOW', 'A', 'X');
-        $version = $this->createDatastreamVersionElement("{$this->dsid}.0", "{$this->dsid} Record", 'text/xml');
-        $content = $this->createDatastreamContentElement();
-        $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($node);
-      }
-    }
-  }
+//  private function createWorkflowStream() {
+//    module_load_include('inc', 'fedora_repository', 'api/fedora_item');
+//    $fedora_item = new fedora_item($this->contentModelPid);
+//    $datastreams = $fedora_item->get_datastreams_list_as_array();
+//    if (isset($datastreams['WORKFLOW_TMPL'])) {
+//      $work_flow_template = $fedora_item->get_datastream_dissemination('WORKFLOW_TMPL');
+//      $work_flow_template_dom = DOMDocument::loadXML($work_flow_template);
+//      $work_flow_template_root = $work_flow_template_dom->getElementsByTagName('workflow');
+//      if ($work_flow_template_root->length > 0) {
+//        $work_flow_template_root = $work_flow_template_root->item(0);
+//        $node = $this->importNode($work_flow_template_root, TRUE);
+//        $datastream = $this->createDatastreamElement('WORKFLOW', 'A', 'X');
+//        $version = $this->createDatastreamVersionElement("{$this->dsid}.0", "{$this->dsid} Record", 'text/xml');
+//        $content = $this->createDatastreamContentElement();
+//        $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($node);
+//      }
+//    }
+//  }
 
   /**
    * Checks that the content and dsid are valid and then passes the FOXML creation off
@@ -257,11 +257,11 @@ class FoxmlDocument extends DOMDocument {
     }
     $version_node->appendChild($content)->appendChild($child);
     // Once again god damn you libxml...
-    $class = get_class($ds->content);
-    $namespaces = call_user_func(array($class, 'getRequiredNamespaces'));
-    foreach ($namespaces as $prefix => $uri) {
-      $child->setAttributeNS(self::xmlns, "xmlns:$prefix", $uri);
-    }
+//    $class = get_class($ds->content);
+//    $namespaces = call_user_func(array($class, 'getRequiredNamespaces'));
+//    foreach ($namespaces as $prefix => $uri) {
+//      $child->setAttributeNS(self::xmlns, "xmlns:$prefix", $uri);
+//    }
   }
 
   /**

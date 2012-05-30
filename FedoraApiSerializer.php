@@ -391,4 +391,8 @@ class FedoraApiSerializer {
     return $request['content'];
   }
 
+  public function upload($request) {
+    return $request['content'];
+  }
+
 }

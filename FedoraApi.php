@@ -1288,4 +1288,11 @@ class FedoraApiM {
     $response = $this->serializer->purgeObject($response);
     return $response;
   }
+
+  public function upload($file) {
+    $request = "/upload";
+    $response = $this->connection->postRequest($request, 'file', $file);
+    $response = $this->serializer->upload($response);
+    return $response;
+  }
 }

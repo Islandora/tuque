@@ -157,6 +157,31 @@ class FedoraRepository extends AbstractRepository {
    * @todo error handling
    */
   public function ingestObject(NewFedoraObject &$object) {
+    // we want all the managed datastreams to be uploaded
+    foreach($object as $ds) {
+      if($ds->controlGroup == 'M') {
+        switch($ds->contentType) {
+          case 'file':
+            $url = $this->api->m->upload($ds->content);
+            $ds->contentType = 'url';
+            $ds->content = $url;
+            break;
+
+          case 'string':
+            $temp = tempnam(sys_get_temp_dir(), 'tuque-temp');
+            file_put_contents($temp, $ds->content);
+            $url = $this->api->m->upload($temp);
+            unlink($temp);
+            $ds->contentType = 'url';
+            $ds->content = $url;
+            break;
+          
+          default:
+            break;
+        }
+      }
+    }
+
     $dom = new FoxmlDocument($object);
     $xml = $dom->saveXml();
     $id = $this->api->m->ingest(array('string' => $xml));

@@ -182,15 +182,7 @@ class FedoraRepository extends AbstractRepository {
       return $object;
     }
     catch (RepositoryException $e) {
-      // Check to see if its a 401 or a 404.
-      $previous = $e->getPrevious();
-      if ($previous && ($previous->getCode == 404 || $previous->getCode == 401)) {
-        return NULL;
-      }
-      else {
-        // @todo fix this, it should throw something else.
         throw $e;
-      }
     }
   }
 

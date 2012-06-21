@@ -148,6 +148,18 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
       $this->parseFedoraExceptions($e);
     }
   }
+  
+   /**
+   * @see CurlConnection::patchRequest()
+   */
+  public function patchRequest($url, $type = 'none', $data = NULL, $content_type = NULL) {
+    try {
+      return parent::patchRequest($this->buildUrl($url), $type, $data, $content_type);
+    }
+    catch (HttpConnectionException $e) {
+      $this->parseFedoraExceptions($e);
+    }
+  }
 
   /**
    * @see CurlConnection::putRequest()

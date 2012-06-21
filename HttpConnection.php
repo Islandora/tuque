@@ -137,6 +137,28 @@ abstract class HttpConnection {
    *   * $return['content'] = The body of the HTTP reply
    */
   abstract public function postRequest($url, $type = 'none', $data = NULL, $content_type = NULL);
+  
+  /**
+   * Do a patch request, used for partial updates of a resource
+   * 
+   *
+   * @param string $url
+   *   The URL to post the request to. Should start with the
+   *   protocol. For example: http://.
+   * @param string $type
+   *   This paramerter must be one of: string, file.
+   * @param string $data
+   *   What this parameter contains is decided by the $type parameter.
+   *
+   * @throws HttpConnectionException
+   *
+   * @return array
+   *   Associative array containing:
+   *   * $return['status'] = The HTTP status code
+   *   * $return['headers'] = The HTTP headers of the reply
+   *   * $return['content'] = The body of the HTTP reply
+   */
+  abstract public function patchRequest($url, $type = 'none', $data = NULL, $content_type = NULL);
 
   /**
    * Send a HTTP GET request to URL.
@@ -317,11 +339,10 @@ class CurlConnection extends HttpConnection {
   }
 
   /**
-   * Post a request to the server. This is primarily used for
-   * sending files.
+   * Sends a POST or a PATCH request to the server. 
    *
-   * @todo Test this for posting general form data. (Other then files.)
-   *
+   * @param string $request_type
+   *   POST or PATCH
    * @param string $url
    *   The URL to post the request to. Should start with the
    *   protocol. For example: http://.
@@ -338,10 +359,16 @@ class CurlConnection extends HttpConnection {
    *   * $return['headers'] = The HTTP headers of the reply
    *   * $return['content'] = The body of the HTTP reply
    */
-  public function postRequest($url, $type = 'none', $data = NULL, $content_type = NULL) {
+  protected function postOrPatchRequest($request_type, $url, $type = 'none', $data = NULL, $content_type = NULL) {
     $this->setupCurlContext($url);
-    curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'POST');
-    curl_setopt($this->curlContext, CURLOPT_POST, TRUE);
+    switch (strtolower($request_type)) {
+      case 'patch' :
+        curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'PATCH');
+        break;
+      default : //assume POST 
+        curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'POST');
+        curl_setopt($this->curlContext, CURLOPT_POST, TRUE);
+    }
 
     switch (strtolower($type)) {
       case 'string':
@@ -393,6 +420,57 @@ class CurlConnection extends HttpConnection {
     }
 
     return $results;
+  }
+
+  /**
+   * Do a patch request, used for partial updates of a resource
+   *
+   * 
+   *
+   * @param string $url
+   *   The URL to post the request to. Should start with the
+   *   protocol. For example: http://.
+   * @param string $type
+   *   This paramerter must be one of: string, file.
+   * @param string $data
+   *   What this parameter contains is decided by the $type parameter.
+   *
+   * @throws HttpConnectionException
+   *
+   * @return array
+   *   Associative array containing:
+   *   * $return['status'] = The HTTP status code
+   *   * $return['headers'] = The HTTP headers of the reply
+   *   * $return['content'] = The body of the HTTP reply
+   */
+  public function patchRequest($url, $type = 'none', $data = NULL, $content_type = NULL) {
+    return $this->postOrPatchRequest('PATCH',$url, $type, $data , $content_type);
+  }
+
+  /**
+   * Post a request to the server. This is primarily used for
+   * sending files.
+   *
+   * @todo Test this for posting general form data. (Other then files.)
+   *
+   * @param string $url
+   *   The URL to post the request to. Should start with the
+   *   protocol. For example: http://.
+   * @param string $type
+   *   This paramerter must be one of: string, file.
+   * @param string $data
+   *   What this parameter contains is decided by the $type parameter.
+   *
+   * @throws HttpConnectionException
+   *
+   * @return array
+   *   Associative array containing:
+   *   * $return['status'] = The HTTP status code
+   *   * $return['headers'] = The HTTP headers of the reply
+   *   * $return['content'] = The body of the HTTP reply
+   */
+  public function postRequest($url, $type = 'none', $data = NULL, $content_type = NULL) {
+    return $this->postOrPatchRequest('POST',$url, $type , $data, $content_type );
   }
 
   /**

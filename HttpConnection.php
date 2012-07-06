@@ -137,10 +137,10 @@ abstract class HttpConnection {
    *   * $return['content'] = The body of the HTTP reply
    */
   abstract public function postRequest($url, $type = 'none', $data = NULL, $content_type = NULL);
-  
+
   /**
    * Do a patch request, used for partial updates of a resource
-   * 
+   *
    *
    * @param string $url
    *   The URL to post the request to. Should start with the
@@ -185,7 +185,7 @@ abstract class HttpConnection {
    *   protocol. For example: http://.
    * @param string $type
    *   This paramerter must be one of: string, file, none.
-   * @param string $data
+   * @param string $file
    *   What this parameter contains is decided by the $type parameter.
    *
    * @throws HttpConnectionException
@@ -339,7 +339,7 @@ class CurlConnection extends HttpConnection {
   }
 
   /**
-   * Sends a POST or a PATCH request to the server. 
+   * Sends a POST or a PATCH request to the server.
    *
    * @param string $request_type
    *   POST or PATCH
@@ -362,10 +362,12 @@ class CurlConnection extends HttpConnection {
   protected function postOrPatchRequest($request_type, $url, $type = 'none', $data = NULL, $content_type = NULL) {
     $this->setupCurlContext($url);
     switch (strtolower($request_type)) {
-      case 'patch' :
+      case 'patch':
         curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'PATCH');
         break;
-      default : //assume POST 
+
+      // Assume POST.
+      default:
         curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'POST');
         curl_setopt($this->curlContext, CURLOPT_POST, TRUE);
     }
@@ -425,7 +427,7 @@ class CurlConnection extends HttpConnection {
   /**
    * Do a patch request, used for partial updates of a resource
    *
-   * 
+   *
    *
    * @param string $url
    *   The URL to post the request to. Should start with the
@@ -444,7 +446,7 @@ class CurlConnection extends HttpConnection {
    *   * $return['content'] = The body of the HTTP reply
    */
   public function patchRequest($url, $type = 'none', $data = NULL, $content_type = NULL) {
-    return $this->postOrPatchRequest('PATCH',$url, $type, $data , $content_type);
+    return $this->postOrPatchRequest('PATCH', $url, $type, $data, $content_type);
   }
 
   /**
@@ -470,7 +472,7 @@ class CurlConnection extends HttpConnection {
    *   * $return['content'] = The body of the HTTP reply
    */
   public function postRequest($url, $type = 'none', $data = NULL, $content_type = NULL) {
-    return $this->postOrPatchRequest('POST',$url, $type , $data, $content_type );
+    return $this->postOrPatchRequest('POST', $url, $type, $data, $content_type );
   }
 
   /**

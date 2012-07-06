@@ -148,7 +148,7 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
       $this->parseFedoraExceptions($e);
     }
   }
-  
+
    /**
    * @see CurlConnection::patchRequest()
    */

@@ -42,10 +42,7 @@ class FoxmlDocument extends DOMDocument {
      * So be be cautious, add DOMNodes to their parent element before adding child elements to them.
      */
     $this->createObjectProperties();
-    //$this->createPolicy();
     $this->createDocumentDatastreams();
-    //$this->createCollectionPolicy();
-    //$this->createWorkflowStream();
   }
 
   /**
@@ -76,65 +73,6 @@ class FoxmlDocument extends DOMDocument {
 
     return $object_properties;
   }
-
-//  private function createPolicy() {
-//    $policy_element = $this->getPolicyStreamElement();
-//    if ($policy_element) {
-//      $datastream = $this->createDatastreamElement('POLICY', 'A', 'X');
-//      $version = $this->createDatastreamVersionElement('POLICY.0', 'POLICY', 'text/xml');
-//      $content = $this->createDatastreamContentElement();
-//      $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($policy_element);
-//    }
-//  }
-//
-//  private function getPolicyStreamElement() {
-//    module_load_include('inc', 'fedora_repository', 'ObjectHelper');
-//    $object_helper = new ObjectHelper();
-//    $policy_stream = $object_helper->getStream($this->object->collectionPid, 'CHILD_SECURITY', FALSE);
-//    if (!isset($policy_stream)) {
-//      return NULL; //there is no policy stream so object will not have a policy stream
-//    }
-//    try {
-//      $xml = new SimpleXMLElement($policy_stream);
-//    } catch (Exception $exception) {
-//      watchdog(t("Fedora_Repository"), t("Problem getting security policy."), NULL, WATCHDOG_ERROR);
-//      drupal_set_message(t('Problem getting security policy: !e', array('!e' => $exception->getMessage())), 'error');
-//      return FALSE;
-//    }
-//    $policy_element = $this->createDocumentFragment();
-//    if (!$policy_element) {
-//      drupal_set_message(t('Error parsing security policy stream.'));
-//      watchdog(t("Fedora_Repository"), t("Error parsing security policy stream, could not parse policy stream."), NULL, WATCHDOG_NOTICE);
-//      return FALSE;
-//    }
-//    $this->importNode($policy_element, TRUE);
-//    $value = $policy_element->appendXML($policy_stream);
-//    if (!$value) {
-//      drupal_set_message(t('Error creating security policy stream.'));
-//      watchdog(t("Fedora_Repository"), t("Error creating security policy stream, could not parse collection policy template file."), NULL, WATCHDOG_NOTICE);
-//      return FALSE;
-//    }
-//    return $policy_element;
-//  }
-//
-//  private function createCollectionPolicy() {
-//    module_load_include('inc', 'fedora_repository', 'api/fedora_item');
-//    $fedora_item = new fedora_item($this->contentModelPid);
-//    $datastreams = $fedora_item->get_datastreams_list_as_array();
-//    if (isset($datastreams['COLLECTION_POLICY_TMPL'])) {
-//      $collection_policy_template = $fedora_item->get_datastream_dissemination('COLLECTION_POLICY_TMPL');
-//      $collection_policy_template_dom = DOMDocument::loadXML($collection_policy_template);
-//      $collection_policy_template_root = $collection_policy_template_dom->getElementsByTagName('collection_policy');
-//      if ($collection_policy_template_root->length > 0) {
-//        $collection_policy_template_root = $collection_policy_template_root->item(0);
-//        $node = $this->importNode($collection_policy_template_root, TRUE);
-//        $datastream = $this->createDatastreamElement('COLLECTION_POLICY', 'A', 'X');
-//        $version = $this->createDatastreamVersionElement('COLLECTION_POLICY.0', 'Collection Policy', 'text/xml');
-//        $content = $this->createDatastreamContentElement();
-//        $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($node);
-//      }
-//    }
-//  }
 
   private function createDatastreamElement($id = NULL, $state = NULL, $control_group = NULL, $versionable = NULL) {
     $datastream = $this->createElementNS(self::FOXML, 'foxml:datastream');
@@ -197,30 +135,11 @@ class FoxmlDocument extends DOMDocument {
     return $location;
   }
 
-//  private function createWorkflowStream() {
-//    module_load_include('inc', 'fedora_repository', 'api/fedora_item');
-//    $fedora_item = new fedora_item($this->contentModelPid);
-//    $datastreams = $fedora_item->get_datastreams_list_as_array();
-//    if (isset($datastreams['WORKFLOW_TMPL'])) {
-//      $work_flow_template = $fedora_item->get_datastream_dissemination('WORKFLOW_TMPL');
-//      $work_flow_template_dom = DOMDocument::loadXML($work_flow_template);
-//      $work_flow_template_root = $work_flow_template_dom->getElementsByTagName('workflow');
-//      if ($work_flow_template_root->length > 0) {
-//        $work_flow_template_root = $work_flow_template_root->item(0);
-//        $node = $this->importNode($work_flow_template_root, TRUE);
-//        $datastream = $this->createDatastreamElement('WORKFLOW', 'A', 'X');
-//        $version = $this->createDatastreamVersionElement("{$this->dsid}.0", "{$this->dsid} Record", 'text/xml');
-//        $content = $this->createDatastreamContentElement();
-//        $this->root->appendChild($datastream)->appendChild($version)->appendChild($content)->appendChild($node);
-//      }
-//    }
-//  }
-
   /**
    * Checks that the content and dsid are valid and then passes the FOXML creation off
    * to the relevant function. Currently any 'string' content that is marked as a managed
    * datastream will be ingested as inline.
-   * 
+   *
    * @todo Implement fedora upload function to allow strings to be added as managed datastreams
    */
   public function createDocumentDatastreams() {
@@ -239,9 +158,9 @@ class FoxmlDocument extends DOMDocument {
 
   /**
    * Creates FOXML for any inline datastreams based on the information passed in the $ds object.
-   * 
+   *
    * @param object $ds
-   *   The datastream object 
+   *   The datastream object
    */
   private function createInlineDocumentDatastream($ds) {
     $datastream = $this->createDatastreamElement($ds->id, $ds->state, $ds->controlGroup, $ds->versionable);
@@ -267,9 +186,9 @@ class FoxmlDocument extends DOMDocument {
 
   /**
    * Creates FOXML for any managed, externally referenced or redirect datastreams bases on the $ds object
-   * 
+   *
    * @param object $ds
-   *   The datastream object 
+   *   The datastream object
    */
   private function createDocumentDatastream($ds) {
     $datastream = $this->createDatastreamElement($ds->id, $ds->state, $ds->controlGroup, $ds->versionable);

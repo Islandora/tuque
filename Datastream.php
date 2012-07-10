@@ -56,6 +56,13 @@ abstract class AbstractDatastream extends MagicProperty {
    * @var string
    */
   public $label;
+  
+  /**
+   * the location of consists of a combination of
+   * datastream id and datastream version id
+   * @var type 
+   */
+  public $location;
 
   /**
    * The control group of the datastream. This property is read-only. This will
@@ -196,6 +203,7 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
     unset($this->createdDate);
     unset($this->content);
     unset($this->url);
+    unset($this->location);
     $this->datastreamId = $id;
     $this->parent = $object;
     $this->repository = $repository;
@@ -221,7 +229,7 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
         break;
     }
   }
-
+  
   /**
    * @see AbstractDatastream::delete()
    */
@@ -1148,6 +1156,27 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
     $this->populateDatastreamInfo();
     return parent::controlGroupMagicProperty($function, $value);
   }
+  
+  /**
+   * @see AbstractDatastream::location
+   */
+  protected function locationMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['dsLocation'];
+        break;
+
+      case 'isset':
+        return TRUE;
+        break;
+
+      case 'set':
+      case 'unset':
+        trigger_error("Cannot $function the readonly datastream->id property.", E_USER_WARNING);
+        break;
+    }
+  }
+
 
   /**
    * @see AbstractDatastream::state

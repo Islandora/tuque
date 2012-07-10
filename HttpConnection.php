@@ -106,6 +106,15 @@ abstract class HttpConnection {
    * @var type boolean
    */
   public $reuseConnection = TRUE;
+  
+  /**
+   * some servers require the version of ssl to be set.
+   * we set it to -1 which will allow php to try and figure out what
+   * version to use.  in some cases you may have to set this to 
+   * 2 or 3
+   * @var int 
+   */
+  public $sslVersion = -1;
   /**
    * Turn on to print debug infotmation to stderr.
    * @var type boolean
@@ -175,7 +184,7 @@ abstract class HttpConnection {
    *   * $return['headers'] = The HTTP headers of the reply
    *   * $return['content'] = The body of the HTTP reply
    */
-  abstract public function getRequest($url);
+  abstract public function getRequest($url, $headers_only = FALSE);
 
   /**
    * Send a HTTP PUT request to URL.
@@ -268,6 +277,9 @@ class CurlConnection extends HttpConnection {
     curl_setopt($this->curlContext, CURLOPT_URL, $url);
     curl_setopt($this->curlContext, CURLOPT_SSL_VERIFYPEER, $this->verifyPeer);
     curl_setopt($this->curlContext, CURLOPT_SSL_VERIFYHOST, $this->verifyHost ? 2 : 1);
+    if($this->sslVersion != -1){
+      curl_setopt($this->curlContext, CURLOPT_SSLVERSION, $this->sslVersion);
+    }
     if ($this->timeout) {
       curl_setopt($this->curlContext, CURLOPT_TIMEOUT, $this->timeout);
     }
@@ -569,11 +581,17 @@ class CurlConnection extends HttpConnection {
    *   * $return['headers'] = The HTTP headers of the reply
    *   * $return['content'] = The body of the HTTP reply
    */
-  function getRequest($url) {
+  function getRequest($url, $headers_only = FALSE) {
     $this->setupCurlContext($url);
-
+    if($headers_only){
+      curl_setopt($this->curlContext, CURLOPT_NOBODY, TRUE);
+      curl_setopt($this->curlContext, CURLOPT_HEADER, TRUE);
+      //curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'HEADER');
+    } else {
     curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'GET');
     curl_setopt($this->curlContext, CURLOPT_HTTPGET, TRUE);
+    }
+    
 
     // Ugly substitute for a try catch finally block.
     $exception = NULL;
@@ -585,6 +603,8 @@ class CurlConnection extends HttpConnection {
 
     if ($this->reuseConnection) {
       curl_setopt($this->curlContext, CURLOPT_HTTPGET, FALSE);
+      curl_setopt($this->curlContext, CURLOPT_NOBODY, FALSE);
+      curl_setopt($this->curlContext, CURLOPT_HEADER, FALSE);
     }
     else {
       $this->unallocateCurlContext();

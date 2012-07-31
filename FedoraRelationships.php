@@ -368,6 +368,8 @@ class FedoraRelsExt extends FedoraRelationships {
       else {
         $ds = $this->object->constructDatastream('RELS-EXT', 'X');
         $ds->label = 'Fedora Object to Object Relationship Metadata.';
+        $ds->format = 'info:fedora/fedora-system:FedoraRELSExt-1.0';
+        $ds->mimetype = 'application/rdf+xml';
         $this->new = TRUE;
       }
 
@@ -507,6 +509,8 @@ class FedoraRelsInt extends FedoraRelationships {
       else {
         $ds = $this->aboutDs->parent->constructDatastream('RELS-INT', 'X');
         $ds->label = 'Fedora Relationship Metadata.';
+        $ds->format = 'info:fedora/fedora-system:FedoraRELSInt-1.0';
+        $ds->mimetype = 'application/rdf+xml';
         $this->new = TRUE;
       }
       $this->datastream = $ds;

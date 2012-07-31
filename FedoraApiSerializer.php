@@ -391,6 +391,16 @@ class FedoraApiSerializer {
     return $request['content'];
   }
 
+  /**
+   * Serializes the data returned in FedoraApiM::validate()
+   */
+  public function validate($request){
+    $result = $this->loadSimpleXml($request['content']);
+    $doc = $this->flattenDocument($result);
+    $doc['valid'] = (string) $result['valid'] == "true" ? TRUE : FALSE;
+    return $doc;
+  }
+
   public function upload($request) {
     return $request['content'];
   }

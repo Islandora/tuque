@@ -793,6 +793,7 @@ class FedoraApiM {
    *       [dsLocationType] => INTERNAL_ID
    *       [dsChecksumType] => DISABLED
    *       [dsChecksum] => none
+   *       [dsChecksumValid] => true
    *   )
    *   @endcode
    *
@@ -1287,6 +1288,56 @@ class FedoraApiM {
     $response = $this->connection->deleteRequest($request);
     $response = $this->serializer->purgeObject($response);
     return $response;
+  }
+
+  /**
+   * Validate an object.
+   *
+   * @param string $pid
+   *    Persistent identifier of the digital object.
+   * @param array $as_of_date_time
+   *   (optional) Indicates that the result should be relative to the
+   *     digital object as it existed at the given date and time. Defaults to
+   *     the most recent version.
+   *
+   * @throws RepositoryException
+   *
+   * @return array
+   *   An array containing the validation results.
+   *   @code
+   *   Array
+   *   (
+   *       [valid] => false
+   *       [contentModels] => Array
+   *           (
+   *               [0] => "info:fedora/fedora-system:FedoraObject-3.0"
+   *           )
+   *       [problems] => Array
+   *           (
+   *               [0] => "Problem description"
+   *           )
+   *       [datastreamProblems] => Array
+   *           (
+   *               [dsid] => Array
+   *               (
+   *                   [0] => "Problem description"
+   *               )
+   *           )
+   *   )
+   *   @endcode
+   */
+  public function validate($pid, $as_of_date_time=NULL){
+    $pid = urlencode($pid);
+
+    $request = "/objects/{$pid}/validate";
+    $seperator = '?';
+
+    $this->connection->addParam($request, $seperator, 'asOfDateTime', $as_of_date_time);
+
+    $response = $this->connection->getRequest($request);
+    $response = $this->serializer->validate($response);
+    return $response;
+
   }
 
   public function upload($file) {

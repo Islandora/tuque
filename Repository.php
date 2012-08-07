@@ -184,7 +184,7 @@ class FedoraRepository extends AbstractRepository {
 
     $dom = new FoxmlDocument($object);
     $xml = $dom->saveXml();
-    $id = $this->api->m->ingest(array('string' => $xml));
+    $id = $this->api->m->ingest(array('string' => $xml, 'logMessage' => $object->logMessage));
     $object = new FedoraObject($id, $this);
     $this->cache->set($id, $object);
     return $object;

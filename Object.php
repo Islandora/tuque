@@ -81,6 +81,13 @@ abstract class AbstractObject extends MagicProperty implements Countable, ArrayA
    * @var FedoraDate
    */
   public $lastModifiedDate;
+  
+  /**
+   * Log message associated with the creation of the object in Fedora.
+   * 
+   * @var string
+   */
+  public $logMessage;
 
   /**
    * Set the state of the object to deleted.
@@ -173,6 +180,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
     unset($this->lastModifiedDate);
     unset($this->label);
     unset($this->owner);
+    unset($this->logMessage);
     $this->relationships = new FedoraRelsExt($this);
   }
 
@@ -301,6 +309,34 @@ abstract class AbstractFedoraObject extends AbstractObject {
         break;
     }
   }
+  
+  /**
+   * @see AbstractObject::logMessage
+   */
+  protected function logMessageMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->objectProfile['objLogMessage'];
+        break;
+
+      case 'isset':
+        if ($this->objectProfile['objLogMessage'] === '') {
+          return FALSE;
+        }
+        else {
+          return isset($this->objectProfile['objLogMessage']);
+        }
+        break;
+
+      case 'set':
+        $this->objectProfile['objLogMessage'] = $value;
+        break;
+
+      case 'unset':
+        $this->objectProfile['objLogMessage'] = '';
+        break;
+    }
+  }  
 
   /**
    * @see AbstractObject::constructDatastream()
@@ -629,6 +665,19 @@ class FedoraObject extends AbstractFedoraObject {
         break;
     }
   }
+  
+  /**
+   * @see AbstractObject::logMessage
+   */
+  protected function logMessageMagicProperty($function, $value) {
+    $previous_message = $this->objectProfile['objLogMessage'];
+    $return = parent::logMessageMagicProperty($function, $value);
+
+    if ($previous_message != $this->objectProfile['objLogMessage']) {
+      $this->modifyObject(array('logMessage' => $this->objectProfile['objLogMessage']));
+    }
+    return $return;
+  }
 
   /**
    * @see AbstractObject::constructDatastream()
@@ -651,6 +700,7 @@ class FedoraObject extends AbstractFedoraObject {
         'formatURI' => $ds->format,
         'checksumType' => $ds->checksumType,
         'mimeType' => $ds->mimetype,
+        'logMessage' => $ds->logMessage,
       );
       $dsinfo = $this->repository->api->m->addDatastream($this->id, $ds->id, $ds->contentType, $ds->content, $params);
       $ds = new FedoraDatastream($ds->id, $this, $this->repository, $dsinfo);

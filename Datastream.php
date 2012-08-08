@@ -1,10 +1,10 @@
 <?php
+
 /**
  * @file
  * This file defines all the classes used to manipulate datastreams in the
  * repository.
  */
-
 require_once 'MagicProperty.php';
 require_once 'FedoraDate.php';
 
@@ -56,7 +56,7 @@ abstract class AbstractDatastream extends MagicProperty {
    * @var string
    */
   public $label;
-  
+
   /**
    * the location of consists of a combination of
    * datastream id and datastream version id
@@ -143,6 +143,15 @@ abstract class AbstractDatastream extends MagicProperty {
    * @var string
    */
   public $url;
+
+  /**
+   * This is the log message that will be associated with the action in the
+   * Fedora audit datastream.
+   * 
+   * @var string
+   */
+  public $logMessage;
+
 }
 
 /**
@@ -189,7 +198,7 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
    * @param string $id
    *   The identifier of the datastream.
    */
-  public function  __construct($id, AbstractFedoraObject $object, FedoraRepository $repository) {
+  public function __construct($id, AbstractFedoraObject $object, FedoraRepository $repository) {
     unset($this->id);
     unset($this->label);
     unset($this->controlGroup);
@@ -204,6 +213,7 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
     unset($this->content);
     unset($this->url);
     unset($this->location);
+    unset($this->logMessage);
     $this->datastreamId = $id;
     $this->parent = $object;
     $this->repository = $repository;
@@ -229,7 +239,7 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
         break;
     }
   }
-  
+
   /**
    * @see AbstractDatastream::delete()
    */
@@ -370,6 +380,7 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
         break;
     }
   }
+
 }
 
 /**
@@ -392,7 +403,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
    *
    * @todo test for valid identifiers. it can't start with a number etc.
    */
-  public function  __construct($id, $control_group, AbstractFedoraObject $object, FedoraRepository $repository) {
+  public function __construct($id, $control_group, AbstractFedoraObject $object, FedoraRepository $repository) {
     parent::__construct($id, $object, $repository);
 
     $group = $this->validateControlGroup($control_group);
@@ -411,6 +422,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
     $this->datastreamInfo['dsFormatURI'] = '';
     $this->datastreamInfo['dsChecksumType'] = 'DISABLED';
     $this->datastreamInfo['dsChecksum'] = 'none';
+    $this->datastreamInfo['dsLogMessage'] = '';
 
     $this->datastreamInfo['content'] = array('type' => 'string', 'content' => ' ');
   }
@@ -786,6 +798,29 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
   }
 
   /**
+   *  @see AbstractDatastream::logMessage
+   */
+  protected function logMessageMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        return $this->datastreamInfo['dsLogMessage'];
+        break;
+
+      case 'isset':
+        return $this->isDatastreamProperySet($this->datastreamInfo['dsLogMessage'], '');
+        break;
+
+      case 'set':
+        $this->datastreamInfo['dsLogMessage'] = $value;
+        break;
+
+      case 'unset':
+        $this->datastreamInfo['dsLogMessage'] = '';
+        break;
+    }
+  }
+
+  /**
    *  @see AbstractDatastream::setContentFromFile
    */
   public function setContentFromFile($file) {
@@ -820,6 +855,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
     $this->datastreamInfo['content']['type'] = 'string';
     $this->datastreamInfo['content']['content'] = $string;
   }
+
 }
 
 /**
@@ -838,7 +874,7 @@ abstract class AbstractExistingFedoraDatastream extends AbstractFedoraDatastream
    * @param FedoraRepository $repository
    *   The FedoraRepository that this DS belongs to.
    */
-  public function  __construct($id, FedoraObject $object, FedoraRepository $repository) {
+  public function __construct($id, FedoraObject $object, FedoraRepository $repository) {
     parent::__construct($id, $object, $repository);
   }
 
@@ -890,6 +926,7 @@ abstract class AbstractExistingFedoraDatastream extends AbstractFedoraDatastream
   protected function purgeDatastream($version) {
     return $this->repository->api->m->purgeDatastream($this->parent->id, $this->id, array('startDT' => $version, 'endDT' => $version));
   }
+
 }
 
 /**
@@ -908,7 +945,7 @@ class FedoraDatastreamVersion extends AbstractExistingFedoraDatastream {
   /**
    * The Constructor! Sounds like a superhero doesn't it. Constructor away!
    */
-  public function  __construct($id, array $datastream_info, FedoraDatastream $datastream, FedoraObject $object, FedoraRepository $repository) {
+  public function __construct($id, array $datastream_info, FedoraDatastream $datastream, FedoraObject $object, FedoraRepository $repository) {
     parent::__construct($id, $object, $repository);
     $this->datastreamInfo = $datastream_info;
     $this->parent = $datastream;
@@ -1031,6 +1068,13 @@ class FedoraDatastreamVersion extends AbstractExistingFedoraDatastream {
   }
 
   /**
+   * @see AbstractDatastream::logMessage
+   */
+  protected function logMessageMagicProperty($function, $value) {
+    return $this->generalReadOnly('dsLogMessage', '', $function, $value);
+  }
+
+  /**
    * @see AbstractDatastream::setContentFromFile()
    */
   public function setContentFromFile($file) {
@@ -1050,6 +1094,7 @@ class FedoraDatastreamVersion extends AbstractExistingFedoraDatastream {
   public function setContentFromUrl($url) {
     $this->error();
   }
+
 }
 
 /**
@@ -1156,7 +1201,7 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
     $this->populateDatastreamInfo();
     return parent::controlGroupMagicProperty($function, $value);
   }
-  
+
   /**
    * @see AbstractDatastream::location
    */
@@ -1176,7 +1221,6 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
         break;
     }
   }
-
 
   /**
    * @see AbstractDatastream::state
@@ -1490,6 +1534,31 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
   }
 
   /**
+   * @see AbstractDatastream::logMessage
+   */
+  protected function logMessageMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        $this->populateDatastreamInfo();
+        return $this->datastreamInfo['dsLogMessage'];
+        break;
+
+      case 'isset':
+        $this->populateDatastreamInfo();
+        return $this->isDatastreamProperySet($this->datastreamInfo['dsLogMessage'], '');
+        break;
+
+      case 'set':
+        $this->modifyDatastream(array('dsLogMessage' => $value));
+        break;
+
+      case 'unset':
+        $this->modifyDatastream(array('dsLogMessage' => ''));
+        break;
+    }
+  }
+
+  /**
    * @see AbstractDatastream::setContentFromFile
    */
   public function setContentFromFile($file) {
@@ -1533,7 +1602,7 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
   /**
    * @see ArrayAccess::offsetExists
    */
-  public function offsetExists ($offset) {
+  public function offsetExists($offset) {
     $this->populateDatastreamHistory();
     return isset($this->datastreamHistory);
   }
@@ -1541,7 +1610,7 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
   /**
    * @see ArrayAccess::offsetGet
    */
-  public function offsetGet ($offset) {
+  public function offsetGet($offset) {
     $this->populateDatastreamHistory();
     return new FedoraDatastreamVersion($this->id, $this->datastreamHistory[$offset], $this, $this->parent, $this->repository);
   }
@@ -1549,14 +1618,14 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
   /**
    * @see ArrayAccess::offsetSet
    */
-  public function offsetSet ($offset, $value) {
+  public function offsetSet($offset, $value) {
     trigger_error("Datastream versions are read only and cannot be set.", E_USER_WARNING);
   }
 
   /**
    * @see ArrayAccess::offsetUnset
    */
-  public function offsetUnset ($offset) {
+  public function offsetUnset($offset) {
     $this->populateDatastreamHistory();
     if ($this->count() == 1) {
       trigger_error("Cannot unset the last version of a datastream. To delete the datastream use the object->purgeDatastream() function.", E_USER_WARNING);
@@ -1578,4 +1647,5 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
     }
     return new ArrayIterator($history);
   }
+
 }

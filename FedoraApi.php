@@ -632,6 +632,7 @@ class FedoraApiM {
    *       [dsLocationType] => INTERNAL_ID
    *       [dsChecksumType] => DISABLED
    *       [dsChecksum] => none
+   *       [dsLogMessage] =>
    *   )
    *   @endcode
    *

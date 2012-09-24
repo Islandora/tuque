@@ -50,20 +50,17 @@ abstract class AbstractDatastream extends MagicProperty {
    * @var string
    */
   public $id;
-
   /**
    * The label of the datastream.
    * @var string
    */
   public $label;
-
   /**
    * the location of consists of a combination of
    * datastream id and datastream version id
    * @var type 
    */
   public $location;
-
   /**
    * The control group of the datastream. This property is read-only. This will
    * return one of: "X", "M", "R", or "E" (Inline *X*ML, *M*anaged Content,
@@ -71,32 +68,27 @@ abstract class AbstractDatastream extends MagicProperty {
    * @var string
    */
   public $controlGroup;
-
   /**
    * This defines if the datastream will be versioned or not.
    * @var boolean
    */
   public $versionable;
-
   /**
    * The state of the datastream. This will be one of: "A", "I", "D". When
    * setting the property you can use: A, I, D or Active, Inactive, Deleted.
    * @var string
    */
   public $state;
-
   /**
    * The mimetype of the datastrem.
    * @var string
    */
   public $mimetype;
-
   /**
    * The format of the datastream.
    * @var string
    */
   public $format;
-
   /**
    * The size in bytes of the datastream. This is only valid once a datastream
    * has been ingested.
@@ -104,14 +96,12 @@ abstract class AbstractDatastream extends MagicProperty {
    * @var int
    */
   public $size;
-
   /**
    * The base64 encoded checksum string.
    *
    * @var string
    */
   public $checksum;
-
   /**
    * The type of checksum that will be done on this datastream. Defaults to
    * DISABLED. One of: DISABLED, MD5, SHA-1, SHA-256, SHA-384, SHA-512.
@@ -119,14 +109,12 @@ abstract class AbstractDatastream extends MagicProperty {
    * @var string
    */
   public $checksumType;
-
   /**
    * The date the datastream was created.
    *
    * @var FedoraDate
    */
   public $createdDate;
-
   /**
    * The contents of the datastream as a string. This can only be set for
    * M and X datastreams. For R and E datastreams the URL property needs to be
@@ -135,7 +123,6 @@ abstract class AbstractDatastream extends MagicProperty {
    * @var string
    */
   public $content;
-
   /**
    * This is only valid for R and E datastreams. This is the URL that the
    * datastream references.
@@ -143,7 +130,6 @@ abstract class AbstractDatastream extends MagicProperty {
    * @var string
    */
   public $url;
-
   /**
    * This is the log message that will be associated with the action in the
    * Fedora audit datastream.
@@ -164,26 +150,22 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
    * @var FedoraRepository
    */
   public $repository;
-
   /**
    * The fedora object this datastream belongs to.
    * @var AbstractFedoraObject
    */
   public $parent;
-
   /**
    * An object for manipulating the fedora relationships related to this DS.
    * @var FedoraRelsInt
    */
   public $relationships;
-
   /**
    * The read only ID of the datastream.
    *
    * @var string
    */
   protected $datastreamId = NULL;
-
   /**
    * The array defining what is in the datastream.
    *
@@ -280,7 +262,7 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
    * @todo test if this covers all cases.
    */
   protected function validateMimetype($mime) {
-    if (preg_match('#^[-\w]+/[-\w+]+$#', $mime)) {
+    if (preg_match('#^[-\w]+/[-\w\.+]+$#', $mime)) {
       return TRUE;
     }
     else {
@@ -1120,7 +1102,6 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
    * @var array
    */
   protected $datastreamHistory = NULL;
-
   /**
    * If this is set to TRUE then datastream locking won't be respected. This is
    * dangerous as any changes could clobber someone elses changes.

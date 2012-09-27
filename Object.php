@@ -369,6 +369,7 @@ class NewFedoraObject extends AbstractFedoraObject {
     $this->objectProfile['objState'] = 'A';
     $this->objectProfile['objOwnerId'] = '';
     $this->objectProfile['objLabel'] = '';
+    $this->objectProfile['objLogMessage'] = '';
   }
 
   /**
@@ -502,6 +503,7 @@ class FedoraObject extends AbstractFedoraObject {
     $this->objectProfile = $this->repository->api->a->getObjectProfile($id);
     $this->objectProfile['objCreateDate'] = new FedoraDate($this->objectProfile['objCreateDate']);
     $this->objectProfile['objLastModDate'] = new FedoraDate($this->objectProfile['objLastModDate']);
+    $this->objectProfile['objLogMessage'] = '';
   }
 
   /**

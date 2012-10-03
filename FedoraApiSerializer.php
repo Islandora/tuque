@@ -229,7 +229,6 @@ class FedoraApiSerializer {
    * Serializes the data returned in FedoraApiA::listMethods()
    */
   public function listMethods($request) {
-    print_r($request['content']);
     $result = array();
     $object_methods = $this->loadSimpleXml($request['content']);
     // We can't use flattenDocument here because of the atrtibutes.

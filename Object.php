@@ -514,7 +514,8 @@ class FedoraObject extends AbstractFedoraObject {
       $datastreams = $this->repository->api->a->listDatastreams($this->id);
       $this->datastreams = array();
       foreach ($datastreams as $key => $value) {
-        $this->datastreams[$key] = new FedoraDatastream($key, $this, $this->repository);
+          $this->datastreams[$key] = new FedoraDatastream($key, $this, $this->repository, 
+              array("dsLabel" => $value['label'], "dsMIME" => $value['mimetype']));
       }
     }
   }

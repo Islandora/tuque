@@ -85,7 +85,7 @@ abstract class MagicProperty {
   }
 
   /**
-   * This implments the PHP __isset function which is utilized for testing if
+   * This implements the PHP __isset function which is utilized for testing if
    * data in inaccessable properties is set. This function calls the
    * approprietly named method in the inhereting class.
    * http://php.net/manual/en/language.oop5.overloading.php

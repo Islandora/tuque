@@ -317,6 +317,10 @@ foo;
     $ds2 = new FedoraDatastream($this->testDsid, $this->object, $this->repository);
 
     $this->assertEquals($this->testDsContents, $ds1->content);
+
+    // access a member so that the datastructures are loaded
+    $this->assertEquals($ds1->state, $ds2->state);
+
     $ds2->content = 'foo';
     $ds1->content = 'bar';
   }
@@ -326,6 +330,10 @@ foo;
     $ds2 = new FedoraDatastream($this->testDsid, $this->object, $this->repository);
 
     $this->assertEquals($this->testDsContents, $ds1->content);
+
+    // access a member so that the datastructures are loaded
+    $this->assertEquals($ds1->state, $ds2->state);
+
     $ds2->content = 'foo';
     $ds1->forceUpdate = TRUE;
     $ds1->content = 'bar';
@@ -336,6 +344,10 @@ foo;
     $ds2 = new FedoraDatastream($this->testDsid, $this->object, $this->repository);
 
     $this->assertEquals($this->testDsContents, $ds1->content);
+
+    // access a member so that the datastructures are loaded
+    $this->assertEquals($ds1->state, $ds2->state);
+
     $ds2->content = 'foo';
     try {
       $ds1->content = 'bar';

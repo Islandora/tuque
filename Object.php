@@ -1,9 +1,9 @@
 <?php
+
 /**
  * @file
  * This file contains all of the functionality for objects in the repository.
  */
-
 require_once 'MagicProperty.php';
 require_once 'FedoraDate.php';
 require_once 'Datastream.php';
@@ -44,14 +44,12 @@ abstract class AbstractObject extends MagicProperty implements Countable, ArrayA
    * @var string
    */
   public $label;
-
   /**
    * The user who owns this object.
    *
    * @var string
    */
   public $owner;
-
   /**
    * The state of this object. Must be one of: A (Active), I (Inactive) or
    * D (Deleted). This is a required property and cannot be unset.
@@ -59,14 +57,12 @@ abstract class AbstractObject extends MagicProperty implements Countable, ArrayA
    * @var string
    */
   public $state;
-
   /**
    * The identifier of the object.
    *
    * @var string
    */
   public $id;
-
   /**
    * The date that the object was created. Only valid for objects that have
    * been ingested.
@@ -74,14 +70,12 @@ abstract class AbstractObject extends MagicProperty implements Countable, ArrayA
    * @var FedoraDate
    */
   public $createdDate;
-
   /**
    * The date the object was last modified.
    *
    * @var FedoraDate
    */
   public $lastModifiedDate;
-  
   /**
    * Log message associated with the creation of the object in Fedora.
    * 
@@ -148,19 +142,16 @@ abstract class AbstractFedoraObject extends AbstractObject {
    * @var FedoraRelsExt
    */
   public $relationships;
-
   /**
    * The repository this object belongs to.
    * @var FedoraRepository
    */
   public $repository;
-
   /**
    * The ID of this object.
    * @var string
    */
   protected $objectId;
-
   /**
    * The object profile from fedora for this object.
    * @var array
@@ -171,7 +162,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
   /**
    * Constructosaurus.
    */
-  public function  __construct($id, FedoraRepository $repository) {
+  public function __construct($id, FedoraRepository $repository) {
     $this->repository = $repository;
     $this->objectId = $id;
     unset($this->id);
@@ -182,6 +173,15 @@ abstract class AbstractFedoraObject extends AbstractObject {
     unset($this->owner);
     unset($this->logMessage);
     $this->relationships = new FedoraRelsExt($this);
+  }
+
+  /**
+   * Implements Magic Method.  Returns PID of object when object is printed
+   *
+   * @return string
+   */
+  public function __toString() {
+    return $this->id;
   }
 
   /**
@@ -309,7 +309,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
         break;
     }
   }
-  
+
   /**
    * @see AbstractObject::logMessage
    */
@@ -336,7 +336,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
         $this->objectProfile['objLogMessage'] = '';
         break;
     }
-  }  
+  }
 
   /**
    * @see AbstractObject::constructDatastream()
@@ -344,6 +344,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
   public function constructDatastream($id, $control_group = 'M') {
     return new NewFedoraDatastream($id, $control_group, $this, $this->repository);
   }
+
 }
 
 /**
@@ -363,7 +364,7 @@ class NewFedoraObject extends AbstractFedoraObject {
   /**
    * Constructoman!
    */
-  public function  __construct($id, FedoraRepository $repository) {
+  public function __construct($id, FedoraRepository $repository) {
     parent::__construct($id, $repository);
     $this->objectProfile = array();
     $this->objectProfile['objState'] = 'A';
@@ -436,14 +437,14 @@ class NewFedoraObject extends AbstractFedoraObject {
   /**
    * @see ArrayAccess::offsetExists
    */
-  public function offsetExists ($offset) {
+  public function offsetExists($offset) {
     return isset($this->datastreams[$offset]);
   }
 
   /**
    * @see ArrayAccess::offsetGet
    */
-  public function offsetGet ($offset) {
+  public function offsetGet($offset) {
     if ($this->offsetExists($offset)) {
       return $this->datastreams[$offset];
     }
@@ -455,14 +456,14 @@ class NewFedoraObject extends AbstractFedoraObject {
   /**
    * @see ArrayAccess::offsetSet
    */
-  public function offsetSet ($offset, $value) {
+  public function offsetSet($offset, $value) {
     trigger_error("Datastreams must be added though the NewFedoraObect->ingestDatastream() function.", E_USER_WARNING);
   }
 
   /**
    * @see ArrayAccess::offsetUnset
    */
-  public function offsetUnset ($offset) {
+  public function offsetUnset($offset) {
     $this->purgeDatastream($offset);
   }
 
@@ -472,6 +473,7 @@ class NewFedoraObject extends AbstractFedoraObject {
   public function getIterator() {
     return new ArrayIterator($this->datastreams);
   }
+
 }
 
 /**
@@ -486,7 +488,6 @@ class FedoraObject extends AbstractFedoraObject {
    * @var array
    */
   protected $datastreams = NULL;
-
   /**
    * If this is true we won't respect object locking, we will clobber anything
    * that has been changed.
@@ -497,7 +498,7 @@ class FedoraObject extends AbstractFedoraObject {
   /**
    * The class constructor. Should be instantiated by the repository.
    */
-  public function  __construct($id, FedoraRepository $repository) {
+  public function __construct($id, FedoraRepository $repository) {
     parent::__construct($id, $repository);
 
     $this->objectProfile = $this->repository->api->a->getObjectProfile($id);
@@ -651,7 +652,7 @@ class FedoraObject extends AbstractFedoraObject {
       case 'get':
         $models = array();
         // Cut off info:fedora/.
-        foreach($this->objectProfile['objModels'] as $model) {
+        foreach ($this->objectProfile['objModels'] as $model) {
           $models[] = substr($model, 12);
         }
         return $models;
@@ -667,7 +668,7 @@ class FedoraObject extends AbstractFedoraObject {
         break;
     }
   }
-  
+
   /**
    * @see AbstractObject::logMessage
    */
@@ -725,7 +726,7 @@ class FedoraObject extends AbstractFedoraObject {
   /**
    * @see ArrayAccess::offsetExists
    */
-  public function offsetExists ($offset) {
+  public function offsetExists($offset) {
     $this->populateDatastreams();
     return isset($this->datastreams[$offset]);
   }
@@ -733,7 +734,7 @@ class FedoraObject extends AbstractFedoraObject {
   /**
    * @see ArrayAccess::offsetGet
    */
-  public function offsetGet ($offset) {
+  public function offsetGet($offset) {
     $this->populateDatastreams();
     return $this->getDatastream($offset);
   }
@@ -741,14 +742,14 @@ class FedoraObject extends AbstractFedoraObject {
   /**
    * @see ArrayAccess::offsetSet
    */
-  public function offsetSet ($offset, $value) {
+  public function offsetSet($offset, $value) {
     trigger_error("Datastreams must be added using the FedoraObject->ingestDatastream function.", E_USER_WARNING);
   }
 
   /**
    * @see ArrayAccess::offsetUnset
    */
-  public function offsetUnset ($offset) {
+  public function offsetUnset($offset) {
     $this->populateDatastreams();
     if (isset($this->datastreams[$offset])) {
       $this->purgeDatastream($offset);
@@ -762,4 +763,22 @@ class FedoraObject extends AbstractFedoraObject {
     $this->populateDatastreams();
     return new ArrayIterator($this->datastreams);
   }
+
+  /**
+   * Returns IDs of collections of which object is a member
+   *
+   * @return array
+   */
+  public function getParents() {
+    $collections = array_merge(
+            $this->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection'),
+            $this->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf'));
+    $collection_ids = array();
+    foreach ($collections as $collection) {
+      $collection_ids[] = $collection['object']['value'];
+    }
+    return $collection_ids;
+  }
+
 }
+

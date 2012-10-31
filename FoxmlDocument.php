@@ -136,22 +136,18 @@ class FoxmlDocument extends DOMDocument {
   }
 
   /**
-   * Checks that the content and dsid are valid and then passes the FOXML creation off
-   * to the relevant function. Currently any 'string' content that is marked as a managed
-   * datastream will be ingested as inline.
-   *
-   * @todo Implement fedora upload function to allow strings to be added as managed datastreams
+   * Passes each datastream to the appropriate ds create function.
    */
   public function createDocumentDatastreams() {
     foreach ($this->object as $ds) {
-      if (!isset($ds->id) || strlen($ds->content) < 1) {
-        return "";
-      }
-      if ($ds->contentType == 'string') {
+      switch($ds->controlGroup) {
+        case 'X':
           $this->createInlineDocumentDatastream($ds);
-      }
-      else {
-        $this->createDocumentDatastream($ds);
+          break;
+
+        default:
+          $this->createDocumentDatastream($ds);
+          break;
       }
     }
   }
@@ -192,7 +188,6 @@ class FoxmlDocument extends DOMDocument {
    */
   private function createDocumentDatastream($ds) {
     $datastream = $this->createDatastreamElement($ds->id, $ds->state, $ds->controlGroup, $ds->versionable);
-    //$datastream->setAttribute('FEDORA_URI', $ds->content);
     $version = $this->createDatastreamVersionElement($ds->id . '.0', $ds->label, $ds->mimetype, $ds->format);
     $content = $this->createDatastreamContentLocationElement('URL', $ds->content);
     $version_node = $this->root->appendChild($datastream)->appendChild($version);

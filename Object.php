@@ -78,7 +78,7 @@ abstract class AbstractObject extends MagicProperty implements Countable, ArrayA
   public $lastModifiedDate;
   /**
    * Log message associated with the creation of the object in Fedora.
-   * 
+   *
    * @var string
    */
   public $logMessage;
@@ -705,7 +705,18 @@ class FedoraObject extends AbstractFedoraObject {
         'mimeType' => $ds->mimetype,
         'logMessage' => $ds->logMessage,
       );
-      $dsinfo = $this->repository->api->m->addDatastream($this->id, $ds->id, $ds->contentType, $ds->content, $params);
+      $temp = tempnam(sys_get_temp_dir(), 'tuque');
+      $return = $ds->getContent($temp);
+      if($return === TRUE) {
+        $type = 'file';
+        $content = $temp;
+      }
+      else {
+        $type = 'url';
+        $content = $ds->content;
+      }
+      $dsinfo = $this->repository->api->m->addDatastream($this->id, $ds->id, $type, $content, $params);
+      unlink($temp);
       $ds = new FedoraDatastream($ds->id, $this, $this->repository, $dsinfo);
       $this->datastreams[$ds->id] = $ds;
       return $ds;

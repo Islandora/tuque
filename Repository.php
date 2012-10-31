@@ -160,25 +160,13 @@ class FedoraRepository extends AbstractRepository {
     // we want all the managed datastreams to be uploaded
     foreach($object as $ds) {
       if($ds->controlGroup == 'M') {
-        switch($ds->contentType) {
-          case 'file':
-            $url = $this->api->m->upload($ds->content);
-            $ds->contentType = 'url';
-            $ds->content = $url;
-            break;
-
-          case 'string':
-            $temp = tempnam(sys_get_temp_dir(), 'tuque-temp');
-            file_put_contents($temp, $ds->content);
-            $url = $this->api->m->upload($temp);
-            unlink($temp);
-            $ds->contentType = 'url';
-            $ds->content = $url;
-            break;
-          
-          default:
-            break;
+        $temp = tempnam(sys_get_temp_dir(), 'tuque');
+        $return = $ds->getContent($temp);
+        if($return === TRUE) {
+          $url = $this->api->m->upload($temp);
+          $ds->setContentFromUrl($url);
         }
+        unlink($temp);
       }
     }
 

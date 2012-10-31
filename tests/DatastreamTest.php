@@ -114,7 +114,7 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
 
   public function testVersionable() {
     $this->assertTrue($this->ds->versionable);
-    
+
     $this->ds->versionable = FALSE;
     $this->assertFalse($this->ds->versionable);
     $this->assertFalse($this->ds->versionable);
@@ -184,7 +184,12 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testContents() {
+    $temp = tempnam(sys_get_temp_dir(), 'tuque');
     $this->assertEquals($this->testDsContents, $this->ds->content);
+    $return = $this->ds->getContent($temp);
+    $this->assertTrue($return);
+    $this->assertEquals($this->testDsContents, file_get_contents($temp));
+    unlink($temp);
     $this->assertTrue(isset($this->ds->content));
   }
 
@@ -196,9 +201,13 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testContentSetUrl() {
+    $temp = tempnam(sys_get_temp_dir(), 'tuque');
     $this->ds->setContentFromUrl('http://hudson.islandora.ca/files/superlative.png');
     $actual = file_get_contents('http://hudson.islandora.ca/files/superlative.png');
     $this->assertEquals($actual, $this->ds->content);
+    $this->ds->getContent($temp);
+    $this->assertEquals($actual, file_get_contents($temp));
+    unlink($temp);
   }
 
   public function testContentSetString() {
@@ -215,9 +224,13 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testContentX() {
+    $temp = tempnam(sys_get_temp_dir(), 'tuque');
     $this->x->content = '<woot/>';
     $newds = new FedoraDatastream($this->testDsidX, $this->object, $this->repository);
     $this->assertEquals('<woot></woot>', trim($newds->content));
+    $this->x->getContent($temp);
+    $this->assertEquals("\n<woot></woot>\n", file_get_contents($temp));
+    unlink($temp);
   }
 
   public function testContentXFromFile() {
@@ -338,7 +351,7 @@ foo;
     $ds1->forceUpdate = TRUE;
     $ds1->content = 'bar';
   }
-  
+
   public function testLockingRefresh() {
     $ds1 = new FedoraDatastream($this->testDsid, $this->object, $this->repository);
     $ds2 = new FedoraDatastream($this->testDsid, $this->object, $this->repository);

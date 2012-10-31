@@ -288,13 +288,16 @@ class FedoraApiA {
    *   (optional) Indicates that the result should be relative to the
    *     digital object as it existed at the given date and time. Defaults to
    *     the most recent version.
+   * @param array $file
+   *   (optional) A file to retrieve the dissemination into.
    *
    * @throws RespositoryException
    *
    * @return string
-   *   The response from Fedora with the contents of the datastream.
+   *   The response from Fedora with the contents of the datastream if file
+   *   isn't set. Returns TRUE if the file parameter is passed.
    */
-  public function getDatastreamDissemination($pid, $dsid, $as_of_date_time = NULL) {
+  public function getDatastreamDissemination($pid, $dsid, $as_of_date_time = NULL, $file = NULL) {
     $pid = urlencode($pid);
     $dsid = urlencode($dsid);
     $seperator = '?';
@@ -303,8 +306,8 @@ class FedoraApiA {
 
     $this->connection->addParam($request, $seperator, 'asOfDateTime', $as_of_date_time);
 
-    $response = $this->connection->getRequest($request);
-    $response = $this->serializer->getDatastreamDissemination($response);
+    $response = $this->connection->getRequest($request, FALSE, $file);
+    $response = $this->serializer->getDatastreamDissemination($response, $file);
     return $response;
   }
 

@@ -339,6 +339,50 @@ abstract class AbstractFedoraObject extends AbstractObject {
   }
 
   /**
+   * @see AbstractObject::models
+   */
+  protected function modelsMagicProperty($function, $value) {
+    switch ($function) {
+      case 'get':
+        $models = array();
+        $rels_models = $this->relationships->get(FEDORA_MODEL_URI, 'hasModel');
+        foreach ($rels_models as $model) {
+          $models[] = $model['object']['value'];
+        }
+        if(!in_array('fedora-system:FedoraObject-3.0', $models)) {
+          $models[] = 'fedora-system:FedoraObject-3.0';
+        }
+        return $models;
+        break;
+
+      case 'isset':
+        $rels_models = $this->relationships->get(FEDORA_MODEL_URI, 'hasModel');
+        return (count($rels_models) > 0);
+        break;
+
+      case 'set':
+        if(!is_array($value)) {
+          $models = array($value);
+        }
+        else {
+          $models = $value;
+        }
+
+        if(!in_array('fedora-system:FedoraObject-3.0', $models)) {
+          $models[] = 'fedora-system:FedoraObject-3.0';
+        }
+        foreach ($models as $model) {
+          $this->relationships->add(FEDORA_MODEL_URI, 'hasModel', $model);
+        }
+        break;
+
+      case 'unset':
+        $this->relationships->remove(FEDORA_MODEL_URI, 'hasModel');
+        break;
+    }
+  }
+
+  /**
    * @see AbstractObject::constructDatastream()
    */
   public function constructDatastream($id, $control_group = 'M') {
@@ -500,8 +544,15 @@ class FedoraObject extends AbstractFedoraObject {
    */
   public function __construct($id, FedoraRepository $repository) {
     parent::__construct($id, $repository);
+    $this->refresh();
+  }
 
-    $this->objectProfile = $this->repository->api->a->getObjectProfile($id);
+  /**
+   * This function clears the object cache, so everything will be
+   * requested directly from fedora again.
+   */
+  public function refresh() {
+    $this->objectProfile = $this->repository->api->a->getObjectProfile($this->id);
     $this->objectProfile['objCreateDate'] = new FedoraDate($this->objectProfile['objCreateDate']);
     $this->objectProfile['objLastModDate'] = new FedoraDate($this->objectProfile['objLastModDate']);
     $this->objectProfile['objLogMessage'] = '';
@@ -640,31 +691,6 @@ class FedoraObject extends AbstractFedoraObject {
       case 'set':
       case 'unset':
         trigger_error("Cannot $function the readonly object->lastModifiedDate property.", E_USER_WARNING);
-        break;
-    }
-  }
-
-  /**
-   * @see AbstractObject::models
-   */
-  protected function modelsMagicProperty($function, $value) {
-    switch ($function) {
-      case 'get':
-        $models = array();
-        // Cut off info:fedora/.
-        foreach ($this->objectProfile['objModels'] as $model) {
-          $models[] = substr($model, 12);
-        }
-        return $models;
-        break;
-
-      case 'isset':
-        return TRUE;
-        break;
-
-      case 'set':
-      case 'unset':
-        trigger_error("Cannot $function the readonly object->models.", E_USER_WARNING);
         break;
     }
   }

@@ -213,4 +213,18 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
     $this->assertInternalType('array', $result);
     unlink($temp);
   }
+
+  public function testObjectModels() {
+    $models = $this->object->models;
+    $this->assertEquals(array('fedora-system:FedoraObject-3.0'), $models);
+    $this->object->relationships->add(FEDORA_MODEL_URI, 'hasModel', 'pid:jesus');
+    $this->object->relationships->add(FEDORA_MODEL_URI, 'hasModel', 'pid:rofl');
+    $models = $this->object->models;
+    $this->assertEquals(array('pid:jesus', 'pid:rofl', 'fedora-system:FedoraObject-3.0'), $models);
+  }
+
+  public function testObjectModelsAdd() {
+    $this->object->models = array('router:killah', 'jon:is:great');
+    $this->assertEquals(array('router:killah', 'jon:is:great', 'fedora-system:FedoraObject-3.0'), $this->object->models);
+  }
 }

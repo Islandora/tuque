@@ -164,6 +164,26 @@ abstract class AbstractFedoraObject extends AbstractObject {
    * @see FedoraApiA::getObjectProfile
    */
   protected $objectProfile;
+  /**
+   * The name of the class that the Factory for FedoraDatastream should
+   * produce. This allows us to override the factory in inhereted classes.
+   *
+   * @var string
+   */
+  protected $fedoraDatastreamClass = 'FedoraDatastream';
+  /**
+   * The name of the class that the Factory for NewFedoraDatastream should
+   * produce. This allows us to override the factory in inhereted classes.
+   *
+   * @var string
+   */
+  protected $newFedoraDatastreamClass = 'NewFedoraDatastream';
+  /**
+   * The name of the class to use for RelsExt
+   *
+   * @var string
+   */
+  protected $fedoraRelsExtClass = 'FedoraRelsExt';
 
   /**
    * Constructosaurus.
@@ -179,7 +199,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
     unset($this->owner);
     unset($this->logMessage);
     unset($this->models);
-    $this->relationships = new FedoraRelsExt($this);
+    $this->relationships = new $this->fedoraRelsExtClass($this);
   }
 
   /**
@@ -393,7 +413,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
    * @see AbstractObject::constructDatastream()
    */
   public function constructDatastream($id, $control_group = 'M') {
-    return new NewFedoraDatastream($id, $control_group, $this, $this->repository);
+    return new $this->newFedoraDatastreamClass($id, $control_group, $this, $this->repository);
   }
 
 }
@@ -573,7 +593,7 @@ class FedoraObject extends AbstractFedoraObject {
       $datastreams = $this->repository->api->a->listDatastreams($this->id);
       $this->datastreams = array();
       foreach ($datastreams as $key => $value) {
-        $this->datastreams[$key] = new FedoraDatastream($key, $this, $this->repository, array("dsLabel" => $value['label'], "dsMIME" => $value['mimetype']));
+        $this->datastreams[$key] = new $this->fedoraDatastreamClass($key, $this, $this->repository, array("dsLabel" => $value['label'], "dsMIME" => $value['mimetype']));
       }
     }
   }
@@ -750,7 +770,7 @@ class FedoraObject extends AbstractFedoraObject {
       }
       $dsinfo = $this->repository->api->m->addDatastream($this->id, $ds->id, $type, $content, $params);
       unlink($temp);
-      $ds = new FedoraDatastream($ds->id, $this, $this->repository, $dsinfo);
+      $ds = new $this->fedoraDatastreamClass($ds->id, $this, $this->repository, $dsinfo);
       $this->datastreams[$ds->id] = $ds;
       return $ds;
     }

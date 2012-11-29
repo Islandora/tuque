@@ -108,6 +108,10 @@ class FedoraRepository extends AbstractRepository {
    */
   public $ri;
 
+  protected $queryClass = 'RepositoryQuery';
+  protected $newObjectClass = 'NewFedoraObject';
+  protected $objectClass = 'FedoraObject';
+
   /**
    * Constructor for the FedoraRepository Object.
    *
@@ -120,11 +124,12 @@ class FedoraRepository extends AbstractRepository {
   public function __construct(FedoraApi $api, AbstractCache $cache) {
     $this->api = $api;
     $this->cache = $cache;
-    $this->ri = new RepositoryQuery($this->api->connection);
+    $this->ri = new $this->queryClass($this->api->connection);
   }
 
   /**
    * @see AbstractRepository::findObjects
+   * @todo this needs to be implemented!
    */
   public function findObjects(array $search) {
   }
@@ -149,7 +154,7 @@ class FedoraRepository extends AbstractRepository {
       $id = $this->api->m->getNextPid($exploded[0]);
     }
 
-    return new NewFedoraObject($id, $this);
+    return new $this->newObjectClass($id, $this);
   }
 
   /**
@@ -173,13 +178,13 @@ class FedoraRepository extends AbstractRepository {
     $dom = new FoxmlDocument($object);
     $xml = $dom->saveXml();
     $id = $this->api->m->ingest(array('string' => $xml, 'logMessage' => $object->logMessage));
-    $object = new FedoraObject($id, $this);
+    $object = new $this->objectClass($id, $this);
     $this->cache->set($id, $object);
     return $object;
   }
 
   /**
-   * @see AbstractRepository::ingestObject()
+   * @see AbstractRepository::getObject()
    * @todo perhaps we should check if an object exists instead of catching
    *   the exception
    */
@@ -190,7 +195,7 @@ class FedoraRepository extends AbstractRepository {
     }
 
     try {
-      $object = new FedoraObject($id, $this);
+      $object = new $this->objectClass($id, $this);
       $this->cache->set($id, $object);
       return $object;
     }

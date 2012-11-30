@@ -151,6 +151,43 @@ abstract class AbstractDatastream extends MagicProperty {
    */
   public $logMessage;
 
+  /**
+   * Unsets public members.
+   *
+   * We only define the public members of the object for Doxygen, they aren't actually accessed or used,
+   * and if they are not unset, they can cause problems after unserialization.
+   */
+  public function __construct() {
+    $this->unset_members();
+  }
+
+  /**
+   * Upon unserialization unset any public members.
+   */
+  public function __wakeup() {
+    $this->unset_members();
+  }
+
+  /**
+   * Unsets public members, required for child classes to funciton properly with MagicProperties.
+   */
+  private function unset_members() {
+    unset($this->id);
+    unset($this->label);
+    unset($this->controlGroup);
+    unset($this->versionable);
+    unset($this->state);
+    unset($this->mimetype);
+    unset($this->format);
+    unset($this->size);
+    unset($this->checksum);
+    unset($this->checksumType);
+    unset($this->createdDate);
+    unset($this->content);
+    unset($this->url);
+    unset($this->location);
+    unset($this->logMessage);
+  }
 }
 
 /**
@@ -197,21 +234,7 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
    *   The identifier of the datastream.
    */
   public function __construct($id, AbstractFedoraObject $object, FedoraRepository $repository) {
-    unset($this->id);
-    unset($this->label);
-    unset($this->controlGroup);
-    unset($this->versionable);
-    unset($this->state);
-    unset($this->mimetype);
-    unset($this->format);
-    unset($this->size);
-    unset($this->checksum);
-    unset($this->checksumType);
-    unset($this->createdDate);
-    unset($this->content);
-    unset($this->url);
-    unset($this->location);
-    unset($this->logMessage);
+    parent::__construct();
     $this->datastreamId = $id;
     $this->parent = $object;
     $this->repository = $repository;
@@ -386,6 +409,14 @@ abstract class AbstractFedoraDatastream extends AbstractDatastream {
  * inforamtion for a new fedora datastream before it is ingested.
  */
 class NewFedoraDatastream extends AbstractFedoraDatastream {
+
+  /**
+   * Used to determine if we should delete the contents of this datastream when
+   * this class is destoryed.
+   *
+   * @var boolean
+   */
+  protected $copied = FALSE;
 
   /**
    * The constructor for a new fedora datastream.
@@ -689,7 +720,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
   protected function contentMagicProperty($function, $value) {
     switch ($function) {
       case 'get':
-        switch($this->datastreamInfo['content']['type']) {
+        switch ($this->datastreamInfo['content']['type']) {
           case 'string':
           case 'url':
             return $this->datastreamInfo['content']['content'];
@@ -789,16 +820,23 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
 
   /**
    *  @see AbstractDatastream::setContentFromFile
+   *
+   * @param boolean $copy
+   *   If TRUE this object will copy and manage the given file, if FALSE the management of the files is up to the caller.
    */
-  public function setContentFromFile($file) {
+  public function setContentFromFile($file, $copy = TRUE) {
     if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
       trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
       return;
     }
-    $tmpfile = tempnam(sys_get_temp_dir(), 'tuque');
-    copy($file, $tmpfile);
+    $this->copied = $copy;
+    if ($copy) {
+      $tmpfile = tempnam(sys_get_temp_dir(), 'tuque');
+      copy($file, $tmpfile);
+      $file = $tmpfile;
+    }
     $this->datastreamInfo['content']['type'] = 'file';
-    $this->datastreamInfo['content']['content'] = $tmpfile;
+    $this->datastreamInfo['content']['content'] = $file;
   }
 
   /**
@@ -833,7 +871,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
       trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
       return;
     }
-    switch($this->datastreamInfo['content']['type']) {
+    switch ($this->datastreamInfo['content']['type']) {
       case 'file':
         copy($this->datastreamInfo['content']['content'], $file);
         return TRUE;
@@ -846,7 +884,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
   }
 
   public function __destruct() {
-    if ($this->datastreamInfo['content']['type'] == 'file') {
+    if ($this->datastreamInfo['content']['type'] == 'file' && $this->copied == TRUE) {
       unlink($this->datastreamInfo['content']['content']);
     }
   }

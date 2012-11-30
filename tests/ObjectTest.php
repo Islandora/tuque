@@ -57,6 +57,26 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('aboot', $this->getValue('objLabel'));
   }
 
+  public function testObjectLabelSerialization() {
+    $this->assertEquals('', $this->object->label);
+    $this->object->label = 'first';
+    $this->assertEquals('first', $this->object->label);
+    $this->assertEquals('first', $this->getValue('objLabel'));
+    $this->assertTrue(isset($this->object->label));
+
+    // $this->object = clone $this->object;
+     $temp = serialize($this->object);
+     // Destroy but leave the connection exiting via the tests reference.
+    unset($this->object);
+   $this->object = unserialize($temp);
+
+    $this->assertEquals('first', $this->getValue('objLabel'));
+    $this->object->label = 'foo';
+    $this->assertEquals('foo', $this->object->label);
+    $this->assertEquals('foo', $this->getValue('objLabel'));
+    $this->assertTrue(isset($this->object->label));
+  }
+
   public function testObjectOwner() {
     $this->assertEquals(FEDORAUSER, $this->object->owner);
     $this->object->owner = 'foo';
@@ -144,7 +164,7 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
     $this->assertFalse($this->object['foo']);
     $this->assertInstanceOf('FedoraDatastream', $this->object['DC']);
     $this->assertEquals('DC', $this->object['DC']->id);
-    foreach($this->object as $id => $ds){
+    foreach ($this->object as $id => $ds) {
       $this->assertTrue(in_array($id, array('DC', $this->testDsid)));
       $this->assertTrue(in_array($ds->id, array('DC', $this->testDsid)));
     }

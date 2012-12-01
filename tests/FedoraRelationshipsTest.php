@@ -10,14 +10,6 @@ require_once "FedoraRelationships.php";
 class FedoraRelationshipsTest extends PHPUnit_Framework_TestCase {
 
   function testRelationshipDescription() {
-$expected = <<<XML
-<?xml version="1.0" encoding="UTF-8"?>
-<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fuckyah="http://crazycool.com#">
-  <Description rdf:about="info:fedora/one">
-    <fuckyah:woot>test</fuckyah:woot>
-  </Description>
-</RDF>
-XML;
     $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
     $this->api = new FedoraApi($connection);
     $cache = new SimpleCache();
@@ -44,16 +36,6 @@ XML;
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fuckyah="http://crazycool.com#">
   <description rdf:about="info:fedora/test:test">
     <fuckyah:woot>test</fuckyah:woot>
-  </description>
-</RDF>
-XML;
-
-    $expected = <<<XML
-<?xml version="1.0" encoding="UTF-8"?>
-<RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fuckyah="http://crazycool.com#">
-  <description rdf:about="info:fedora/test:test">
-    <fuckyah:woot>test</fuckyah:woot>
-    <fuckyah:woot>1234</fuckyah:woot>
   </description>
 </RDF>
 XML;
@@ -95,5 +77,30 @@ XML;
 
     $this->assertEquals(1, count($relations));
     $this->assertEquals('islandora:sp_basic_image_collection', $relations[0]['object']['value']);
+  }
+
+  function testChangeId() {
+$expected = <<<XML
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:fedora="info:fedora/fedora-system:def/relations-external#" xmlns:fedora-model="info:fedora/fedora-system:def/model#" xmlns:islandora="http://islandora.ca/ontology/relsext#" xmlns:fuckyah="http://crazycool.com#">
+  <rdf:Description rdf:about="info:fedora/zapp:brannigan">
+    <fuckyah:woot>test</fuckyah:woot>
+  </rdf:Description>
+</rdf:RDF>
+
+XML;
+
+    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
+    $this->api = new FedoraApi($connection);
+    $cache = new SimpleCache();
+    $repository = new FedoraRepository($this->api, $cache);
+    $object = $repository->constructObject("test:test");
+    $rel = $object->relationships;
+
+    $rel->registerNamespace('fuckyah', 'http://crazycool.com#');
+    $rel->add('http://crazycool.com#', 'woot', 'test', TRUE);
+    $rel->changeObjectId('zapp:brannigan');
+
+    $this->assertEquals($expected, $object['RELS-EXT']->content);
   }
 }

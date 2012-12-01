@@ -29,6 +29,8 @@ class FedoraApi {
    */
   public $m;
 
+  public $connection;
+
   /**
    * Constructor for the FedoraApi object.
    *

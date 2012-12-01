@@ -466,7 +466,7 @@ class NewFedoraObject extends AbstractFedoraObject {
     parent::__construct($id, $repository);
     $this->objectProfile = array();
     $this->objectProfile['objState'] = 'A';
-    $this->objectProfile['objOwnerId'] = '';
+    $this->objectProfile['objOwnerId'] = $this->repository->api->connection->username;
     $this->objectProfile['objLabel'] = '';
     $this->objectProfile['objLogMessage'] = '';
   }
@@ -483,42 +483,17 @@ class NewFedoraObject extends AbstractFedoraObject {
       case 'isset':
         return isset($this->objectId);
       case 'set':
-        $this->changeObjectID($value);
+        $this->objectId = $value;
+        if(isset($this['RELS-EXT'])) {
+          $this->relationships->changeObjectID($value);
+        }
+        if(isset($this['RELS-INT'])) {
+          $this['RELS-INT']->relationships->changeObjectID($value);
+        }
         break;
       case 'unset':
         unset($this->objectId);
         break;
-    }
-  }
-
-  /**
-   * Some datastreams hold onto a reference of the objects pid, they need to be updated when the PID changes.
-   */
-  protected function changeObjectID($id) {
-    $this->objectId = $id;
-    $that = $this;
-    $update_rels_datastream = function($dsid, $pattern, $replacement) use ($that) {
-      $doc = new DOMDocument();
-      $doc->preserveWhiteSpace = FALSE;
-      $doc->formatOutput = TRUE;
-      $doc->loadXml($that[$dsid]->content);
-      $xpath = new DOMXPath($doc);
-      $xpath->registerNamespace('rdf', RDF_URI);
-      $results = $xpath->query('/rdf:RDF/rdf:Description/@rdf:about | /rdf:RDF/rdf:description/@rdf:about');
-      $count = $results->length;
-      if ($count > 0) {
-        for ($i = 0; $i < $count; $i++) {
-          $about = $results->item($i);
-          $about->value = preg_replace($pattern, $replacement, $about->value);
-        }
-        $that[$dsid]->content = $doc->saveXml();
-      }
-    };
-    if (isset($this['RELS-EXT'])) {
-      $update_rels_datastream('RELS-EXT', '/\/[^\/]*$/', "/{$this->objectId}");
-    }
-    if (isset($this['RELS-INT'])) {
-      $update_rels_datastream('RELS-INT', '/\/[^\/]*\//', "/{$this->objectId}/");
     }
   }
 
@@ -598,7 +573,7 @@ class NewFedoraObject extends AbstractFedoraObject {
       return $this->datastreams[$offset];
     }
     else {
-      return NULL;
+      return FALSE;
     }
   }
 

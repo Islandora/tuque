@@ -108,6 +108,8 @@ class FedoraRepository extends AbstractRepository {
    */
   public $ri;
 
+  public $api;
+
   protected $queryClass = 'RepositoryQuery';
   protected $newObjectClass = 'NewFedoraObject';
   protected $objectClass = 'FedoraObject';

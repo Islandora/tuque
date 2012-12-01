@@ -5,14 +5,7 @@
  * comparison of dates for example.
  */
 
-class FedoraDate {
-
-  /**
-   * The structure which holds the date.
-   *
-   * @var DateTime
-   */
-  protected $date;
+class FedoraDate extends DateTime {
 
   /**
    * Get the date in a format that Fedora can use.
@@ -24,24 +17,12 @@ class FedoraDate {
     // Fedora will only accept 3 decial places for fractional seconds and PHP
     // returns 6 by default. So we do a little string mangling to make them
     // friends again.
-    $string = (string) $this->date->format("Y-m-d\TH:i:s.u\Z");
+    $string = (string) $this->format("Y-m-d\TH:i:s.u");
     $exploded = explode('.', $string);
     $exploded[1] = substr($exploded[1],0,3);
     $string = implode('.', $exploded);
+    $string .= 'Z';
     return $string;
-  }
-
-  /**
-   * Equivalent to DateTime::format.
-   *
-   * @param string $format
-   *   Format accepted by date().
-   *
-   * @return string
-   *   Returns the formatted date string on success or FALSE on failure.
-   */
-  function format($format) {
-    return $this->date->format($format);
   }
 
   /**
@@ -55,7 +36,7 @@ class FedoraDate {
     // operator because getting the timezone if its not set will actually
     // throw a warning. Ugh.
     date_default_timezone_set(@date_default_timezone_get());
-    $this->date = new DateTime($time, new DateTimeZone('UTC'));
+    parent::__construct($time, new DateTimeZone('UTC'));
   }
 
   /**
@@ -67,8 +48,8 @@ class FedoraDate {
   public function __sleep(){
     // PHP Date class loses information when serialized so we need to convert
     // it to a string and then reconstruct it.
-    $this->date = (string) $this->date->format("Y-m-d\TH:i:s.u\Z");
-    return array('date');
+    $this->serializedDate = (string) $this;
+    return array('serializedDate');
   }
 
   /**
@@ -77,6 +58,6 @@ class FedoraDate {
   public function __wakeup() {
     // PHP Date class loses information when serialized so we need to convert
     // it to a string and then reconstruct it.
-    $this->date = new DateTime($this->date);
+    $this->__construct($this->serializedDate);
   }
 }

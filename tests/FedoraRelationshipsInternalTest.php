@@ -65,4 +65,22 @@ class FedoraRelationshipsInternalTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('hasModel', $rels[0]['predicate']['value']);
     $this->assertEquals('islandora:woot', $rels[0]['object']['value']);
   }
+
+  function testNullPredicateURI() {
+    // RELS-EXT TEST
+    $this->object->relationships->add(NULL, 'isViewableByUser', 'test user', TRUE);
+    $rels_ext = $this->object->relationships->get(NULL, 'isViewableByUser');
+    $this->assertEquals(1, count($rels_ext));
+    $this->object->relationships->remove(NULL, 'isViewableByUser');
+    $rels_ext = $this->object->relationships->get(NULL, 'isViewableByUser');
+    $this->assertEquals(0, count($rels_ext));
+
+    // RELS-INT TEST
+    $this->datastream->relationships->add(NULL, 'isViewableByUser', 'test user', TRUE);
+    $rels_int = $this->datastream->relationships->get(NULL, 'isViewableByUser');
+    $this->assertEquals(1, count($rels_int));
+    $this->datastream->relationships->remove(NULL, 'isViewableByUser');
+    $rels_int = $this->datastream->relationships->get(NULL, 'isViewableByUser');
+    $this->assertEquals(0, count($rels_int));
+  }
 }

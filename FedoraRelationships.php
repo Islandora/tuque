@@ -185,8 +185,13 @@ class FedoraRelationships {
       $xpath .= '/*';
     }
     else {
-      $xpath_object->registerNamespace('pred_uri', $predicate_uri);
-      $xpath .= '/pred_uri:' . $predicate;
+      if ($predicate_uri != NULL) {
+        $xpath_object->registerNamespace('pred_uri', $predicate_uri);
+        $xpath .= '/pred_uri:' . $predicate;
+      }
+      else {
+        $xpath .= '/' . $predicate;
+      }
     }
 
     if ($object) {

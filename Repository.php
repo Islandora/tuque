@@ -143,19 +143,13 @@ class FedoraRepository extends AbstractRepository {
    * @see AbstractRepository::constructObject
    */
   public function constructObject($id = NULL) {
-    if ($this->cache->get($id) !== FALSE) {
-      return FALSE;
-    }
-
     $exploded = explode(':', $id);
-
     if (!$id) {
       $id = $this->api->m->getNextPid();
     }
     elseif (count($exploded) == 1) {
       $id = $this->api->m->getNextPid($exploded[0]);
     }
-
     return new $this->newObjectClass($id, $this);
   }
 
@@ -165,11 +159,11 @@ class FedoraRepository extends AbstractRepository {
    */
   public function ingestObject(NewFedoraObject &$object) {
     // we want all the managed datastreams to be uploaded
-    foreach($object as $ds) {
-      if($ds->controlGroup == 'M') {
+    foreach ($object as $ds) {
+      if ($ds->controlGroup == 'M') {
         $temp = tempnam(sys_get_temp_dir(), 'tuque');
         $return = $ds->getContent($temp);
-        if($return === TRUE) {
+        if ($return === TRUE) {
           $url = $this->api->m->upload($temp);
           $ds->setContentFromUrl($url);
         }

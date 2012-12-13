@@ -114,7 +114,6 @@ class FedoraRelationships {
    */
   protected function updateDatastream($document) {
       $document->formatOutput = TRUE;
-      $this->datastream->refresh();
       $this->datastream->content = $document->saveXml();
   }
 

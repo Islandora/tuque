@@ -180,8 +180,13 @@ class FedoraApiSerializer {
   /**
    * Serializes the data returned in FedoraApiA::getDatastreamDissemination()
    */
-  public function getDatastreamDissemination($request) {
-    return $request['content'];
+  public function getDatastreamDissemination($request, $file) {
+    if ($file) {
+      return TRUE;
+    }
+    else {
+      return $request['content'];
+    }
   }
 
   /**

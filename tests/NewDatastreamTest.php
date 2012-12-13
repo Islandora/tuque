@@ -38,7 +38,7 @@ class NewDatastreamTest extends PHPUnit_Framework_TestCase {
   public function testConstructor() {
     $x = new NewFedoraDatastream('foo', 'zap', $this->object, $this->repository);
   }
-  
+
   public function testGetControlGroup() {
     $this->assertEquals('X', $this->x->controlGroup);
     $this->assertEquals('M', $this->m->controlGroup);
@@ -77,4 +77,21 @@ class NewDatastreamTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('D', $this->m->state);
   }
 
+  public function testSetContentMString() {
+    $this->m->content = 'foo';
+    $this->assertEquals('foo', $this->m->content);
+    $temp = tempnam(sys_get_temp_dir(), 'tuque');
+    $this->m->getContent($temp);
+    $this->assertEquals('foo', file_get_contents($temp));
+    unlink($temp);
+  }
+
+  public function testSetContentXString() {
+    $this->x->content = 'foo';
+    $this->assertEquals('foo', $this->x->content);
+    $temp = tempnam(sys_get_temp_dir(), 'tuque');
+    $this->x->getContent($temp);
+    $this->assertEquals('foo', file_get_contents($temp));
+    unlink($temp);
+  }
 }

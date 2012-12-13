@@ -186,8 +186,13 @@ class FedoraRelationships {
       $xpath .= '/*';
     }
     else {
-      $xpath_object->registerNamespace('pred_uri', $predicate_uri);
-      $xpath .= '/pred_uri:' . $predicate;
+      if ($predicate_uri != NULL) {
+        $xpath_object->registerNamespace('pred_uri', $predicate_uri);
+        $xpath .= '/pred_uri:' . $predicate;
+      }
+      else {
+        $xpath .= '/' . $predicate;
+      }
     }
 
     if ($object) {
@@ -332,6 +337,29 @@ class FedoraRelationships {
     return $return;
   }
 
+  /**
+   * This function allows you to change the ID referenced in the rdf:about
+   * attribute. This allows the updating of all the about attribures if the
+   * datastream is being attached to another object.
+   *
+   * @param string $id
+   *   The new ID
+   */
+  public function changeObjectID($id) {
+    $document = $this->getDom();
+    $xpath = $this->getXpath($document);
+    $results = $xpath->query('/rdf:RDF/rdf:Description/@rdf:about | /rdf:RDF/rdf:description/@rdf:about');
+    $count = $results->length;
+    if ($count > 0) {
+      for ($i = 0; $i < $count; $i++) {
+        $about = $results->item($i);
+        $uri = explode('/', $about->value);
+        $uri[1] = $id;
+        $about->value = implode('/', $uri);
+      }
+      $this->updateDatastream($document);
+    }
+  }
 }
 
 class FedoraRelsExt extends FedoraRelationships {
@@ -475,6 +503,11 @@ class FedoraRelsExt extends FedoraRelationships {
     $this->initializeDatastream();
     return parent::internalget($this->object->id, $predicate_uri, $predicate, $object, $literal);
   }
+
+  public function changeObjectID($id) {
+    $this->initializeDatastream();
+    return parent::changeObjectID($id);
+  }
 }
 
 class FedoraRelsInt extends FedoraRelationships {
@@ -614,5 +647,10 @@ class FedoraRelsInt extends FedoraRelationships {
   public function get($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
     $this->initializeDatastream();
     return parent::internalGet("{$this->aboutDs->parent->id}/{$this->aboutDs->id}", $predicate_uri, $predicate, $object, $literal);
+  }
+
+  public function changeObjectID($id) {
+    $this->initializeDatastream();
+    return parent::changeObjectID($id);
   }
 }

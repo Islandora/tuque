@@ -106,20 +106,38 @@ abstract class HttpConnection {
    * @var type boolean
    */
   public $reuseConnection = TRUE;
-  
+
   /**
-   * some servers require the version of ssl to be set.
-   * we set it to -1 which will allow php to try and figure out what
-   * version to use.  in some cases you may have to set this to 
-   * 2 or 3
-   * @var int 
+   * Some servers require the version of ssl to be set.
+   * We set it to NULL which will allow php to try and figure out what
+   * version to use.  in some cases you may have to set this to 2 or 3
+   * @var int
    */
-  public $sslVersion = -1;
+  public $sslVersion = NULL;
+
   /**
    * Turn on to print debug infotmation to stderr.
    * @var type boolean
    */
   public $debug = FALSE;
+
+  /**
+   */
+  public function __sleep() {
+    return array(
+      'url',
+      'cookies',
+      'username',
+      'password',
+      'verifyHost',
+      'verifyPeer',
+      'timeout',
+      'connectTimeout',
+      'userAgent',
+      'reuseConnection',
+      'sslVersion',
+    );
+  }
 
   /**
    * Post a request to the server. This is primarily used for
@@ -175,6 +193,12 @@ abstract class HttpConnection {
    * @param string $url
    *   The URL to post the request to. Should start with the
    *   protocol. For example: http://.
+   * @param boolean $headers_only
+   *   This will cause curl to only return the HTTP headers.
+   * @param string $file
+   *   A file to output the content of request to. If this is set then headers
+   *   are not returned and the 'content' and 'headers' keys of the return isn't
+   *   set.
    *
    * @throws HttpConnectionException
    *
@@ -184,7 +208,7 @@ abstract class HttpConnection {
    *   * $return['headers'] = The HTTP headers of the reply
    *   * $return['content'] = The body of the HTTP reply
    */
-  abstract public function getRequest($url, $headers_only = FALSE);
+  abstract public function getRequest($url, $headers_only = FALSE, $file = FALSE);
 
   /**
    * Send a HTTP PUT request to URL.
@@ -206,6 +230,23 @@ abstract class HttpConnection {
    *   * $return['content'] = The body of the HTTP reply
    */
   abstract public function putRequest($url, $type = 'none', $file = NULL);
+
+  /**
+   * Send a HTTP DELETE request to URL.
+   *
+   * @param string $url
+   *   The URL to post the request to. Should start with the
+   *   protocol. For example: http://.
+   *
+   * @throws HttpConnectionException
+   *
+   * @return array
+   *   Associative array containing:
+   *   * $return['status'] = The HTTP status code
+   *   * $return['headers'] = The HTTP headers of the reply
+   *   * $return['content'] = The body of the HTTP reply
+   */
+  abstract public function deleteRequest($url);
 }
 
 /**
@@ -214,7 +255,7 @@ abstract class HttpConnection {
 class CurlConnection extends HttpConnection {
   const COOKIE_LOCATION = 'curl_cookie';
   protected $cookieFile = NULL;
-  protected $curlContext = NULL;
+  protected static $curlContext = NULL;
 
   /**
    * Constructor for the connection.
@@ -222,86 +263,115 @@ class CurlConnection extends HttpConnection {
    * @throws HttpConnectionException
    */
   public function __construct() {
-
     if (!function_exists("curl_init")) {
       throw new HttpConnectionException('cURL PHP Module must to enabled.', 0);
     }
+    $this->createCookieFile();
+  }
 
+  /**
+   * Save the cookies to the sessions and remember all of the parents members.
+   */
+  public function __sleep() {
+    $this->saveCookiesToSession();
+    return parent::__sleep();
+  }
+
+  /**
+   * Restore the cookies file and initialize curl.
+   */
+  public function __wakeup() {
+    $this->createCookieFile();
+    $this->getCurlContext();
+  }
+
+  /**
+   * Destructor for the connection.
+   *
+   * Save the cookies to the session unallocate curl, and free the cookies file.
+   */
+  public function __destruct() {
+    $this->saveCookiesToSession();
+    $this->unallocateCurlContext();
+    unlink($this->cookieFile);
+  }
+
+  /**
+   * Create a file to store cookies.
+   */
+  protected function createCookieFile() {
     $this->cookieFile = tempnam(sys_get_temp_dir(), 'curlcookie');
-
     // See if we have any cookies in the session already
-    // this makes sure JESSSION ids persist.
+    // this makes sure SESSION ids persist.
     if (isset($_SESSION[self::COOKIE_LOCATION])) {
       file_put_contents($this->cookieFile, $_SESSION[self::COOKIE_LOCATION]);
     }
   }
 
   /**
-   * Destructor for the connection.
+   * Save the contents of the cookie file to the session.
    */
-  public function __destruct() {
+  protected function saveCookiesToSession() {
     // Before we go, save our fedora session cookie to the browsers session.
     if (isset($_SESSION)) {
       $SESSION[self::COOKIE_LOCATION] = file_get_contents($this->cookieFile);
     }
-
-    if ($this->curlContext) {
-      $this->unallocateCurlContext();
-    }
-
-    unlink($this->cookieFile);
   }
 
   /**
    * This function sets up the context for curl.
    */
   protected function getCurlContext() {
-    $this->curlContext = curl_init();
+    if (!isset(self::$curlContext)) {
+      self::$curlContext = curl_init();
+    }
   }
 
   /**
    * Unallocate curl context
    */
   protected function unallocateCurlContext() {
-    curl_close($this->curlContext);
-    $this->curlContext = NULL;
+    if (self::$curlContext) {
+      curl_close(self::$curlContext);
+      self::$curlContext = NULL;
+    }
   }
 
   /**
    * This sets the curl options
    */
   protected function setupCurlContext($url) {
-    if (!$this->curlContext) {
-      $this->getCurlContext();
-    }
-    curl_setopt($this->curlContext, CURLOPT_URL, $url);
-    curl_setopt($this->curlContext, CURLOPT_SSL_VERIFYPEER, $this->verifyPeer);
-    curl_setopt($this->curlContext, CURLOPT_SSL_VERIFYHOST, $this->verifyHost ? 2 : 1);
-    if($this->sslVersion != -1){
-      curl_setopt($this->curlContext, CURLOPT_SSLVERSION, $this->sslVersion);
+    $this->getCurlContext();
+    curl_setopt(self::$curlContext, CURLOPT_URL, $url);
+    curl_setopt(self::$curlContext, CURLOPT_SSL_VERIFYPEER, $this->verifyPeer);
+    curl_setopt(self::$curlContext, CURLOPT_SSL_VERIFYHOST, $this->verifyHost ? 2 : 1);
+    if ($this->sslVersion !== NULL) {
+      curl_setopt(self::$curlContext, CURLOPT_SSLVERSION, $this->sslVersion);
     }
     if ($this->timeout) {
-      curl_setopt($this->curlContext, CURLOPT_TIMEOUT, $this->timeout);
+      curl_setopt(self::$curlContext, CURLOPT_TIMEOUT, $this->timeout);
     }
-    curl_setopt($this->curlContext, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
+    curl_setopt(self::$curlContext, CURLOPT_CONNECTTIMEOUT, $this->connectTimeout);
     if ($this->userAgent) {
-      curl_setopt($this->curlContext, CURLOPT_USERAGENT, $this->userAgent);
+      curl_setopt(self::$curlContext, CURLOPT_USERAGENT, $this->userAgent);
     }
     if ($this->cookies) {
-      curl_setopt($this->curlContext, CURLOPT_COOKIEFILE, $this->cookieFile);
-      curl_setopt($this->curlContext, CURLOPT_COOKIEJAR, $this->cookieFile);
+      curl_setopt(self::$curlContext, CURLOPT_COOKIEFILE, $this->cookieFile);
+      curl_setopt(self::$curlContext, CURLOPT_COOKIEJAR, $this->cookieFile);
     }
-    curl_setopt($this->curlContext, CURLOPT_FAILONERROR, FALSE);
-    curl_setopt($this->curlContext, CURLOPT_FOLLOWLOCATION, 1);
-    curl_setopt($this->curlContext, CURLOPT_RETURNTRANSFER, TRUE);
-    curl_setopt($this->curlContext, CURLOPT_HEADER, TRUE);
+    curl_setopt(self::$curlContext, CURLOPT_FAILONERROR, FALSE);
+    curl_setopt(self::$curlContext, CURLOPT_FOLLOWLOCATION, 1);
+
+    curl_setopt(self::$curlContext, CURLOPT_RETURNTRANSFER, TRUE);
+    curl_setopt(self::$curlContext, CURLOPT_HEADER, TRUE);
+
     if ($this->debug) {
-      curl_setopt($this->curlContext, CURLOPT_VERBOSE, 1);
+      curl_setopt(self::$curlContext, CURLOPT_VERBOSE, 1);
     }
     if ($this->username) {
       $user = $this->username;
       $pass = $this->password;
-      curl_setopt($this->curlContext, CURLOPT_USERPWD, "$user:$pass");
+      curl_setopt(self::$curlContext, CURLOPT_USERPWD, "$user:$pass");
     }
   }
 
@@ -314,33 +384,35 @@ class CurlConnection extends HttpConnection {
    * @return array
    *   Array has keys: (status, headers, content).
    */
-  protected function doCurlRequest() {
-    $curl_response = curl_exec($this->curlContext);
+  protected function doCurlRequest($file = NULL) {
+    $curl_response = curl_exec(self::$curlContext);
 
     // Since we are using exceptions we trap curl error
     // codes and toss an exception, here is a good error
     // code reference.
     // http://curl.haxx.se/libcurl/c/libcurl-errors.html
-    $error_code = curl_errno($this->curlContext);
-    $error_string = curl_error($this->curlContext);
+    $error_code = curl_errno(self::$curlContext);
+    $error_string = curl_error(self::$curlContext);
     if ($error_code != 0) {
       throw new HttpConnectionException($error_string, $error_code);
     }
 
-    $info = curl_getinfo($this->curlContext);
+    $info = curl_getinfo(self::$curlContext);
 
     $response = array();
     $response['status'] = $info['http_code'];
-    $response['headers'] = substr($curl_response, 0, $info['header_size'] - 1);
-    $response['content'] = substr($curl_response, $info['header_size']);
+    if ($file == NULL) {
+      $response['headers'] = substr($curl_response, 0, $info['header_size'] - 1);
+      $response['content'] = substr($curl_response, $info['header_size']);
 
-    // We do some ugly stuff here to strip the error string out
-    // of the HTTP headers, since curl doesn't provide any helper.
-    $http_error_string = explode("\r\n\r\n", $response['headers']);
-    $http_error_string = $http_error_string[count($http_error_string) - 1];
-    $http_error_string = explode("\r\n", $http_error_string);
-    $http_error_string = substr($http_error_string[0], 13);
-    $http_error_string = trim($http_error_string);
+      // We do some ugly stuff here to strip the error string out
+      // of the HTTP headers, since curl doesn't provide any helper.
+      $http_error_string = explode("\r\n\r\n", $response['headers']);
+      $http_error_string = $http_error_string[count($http_error_string) - 1];
+      $http_error_string = explode("\r\n", $http_error_string);
+      $http_error_string = substr($http_error_string[0], 13);
+      $http_error_string = trim($http_error_string);
+    }
 
     // Throw an exception if this isn't a 2XX response.
     if (!preg_match("/^2/", $info['http_code'])) {
@@ -351,38 +423,11 @@ class CurlConnection extends HttpConnection {
   }
 
   /**
-   * Sends a POST or a PATCH request to the server.
-   *
-   * @param string $request_type
-   *   POST or PATCH
-   * @param string $url
-   *   The URL to post the request to. Should start with the
-   *   protocol. For example: http://.
-   * @param string $type
-   *   This paramerter must be one of: string, file.
-   * @param string $data
-   *   What this parameter contains is decided by the $type parameter.
-   *
-   * @throws HttpConnectionException
-   *
-   * @return array
-   *   Associative array containing:
-   *   * $return['status'] = The HTTP status code
-   *   * $return['headers'] = The HTTP headers of the reply
-   *   * $return['content'] = The body of the HTTP reply
+   * @see HttpConnection::patchRequest
    */
-  protected function postOrPatchRequest($request_type, $url, $type = 'none', $data = NULL, $content_type = NULL) {
+  public function patchRequest($url, $type = 'none', $data = NULL, $content_type = NULL) {
     $this->setupCurlContext($url);
-    switch (strtolower($request_type)) {
-      case 'patch':
-        curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'PATCH');
-        break;
-
-      // Assume POST.
-      default:
-        curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'POST');
-        curl_setopt($this->curlContext, CURLOPT_POST, TRUE);
-    }
+    curl_setopt(self::$curlContext, CURLOPT_CUSTOMREQUEST, 'PATCH');
 
     switch (strtolower($type)) {
       case 'string':
@@ -392,21 +437,21 @@ class CurlConnection extends HttpConnection {
         else {
           $headers = array("Content-Type: text/plain");
         }
-        curl_setopt($this->curlContext, CURLOPT_HTTPHEADER, $headers);
-        curl_setopt($this->curlContext, CURLOPT_POSTFIELDS, $data);
+        curl_setopt(self::$curlContext, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, $data);
         break;
 
       case 'file':
         if ($content_type) {
-          curl_setopt($this->curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data;type=$content_type"));
+          curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data;type=$content_type"));
         }
         else {
-          curl_setopt($this->curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data"));
+          curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data"));
         }
         break;
 
       case 'none':
-        curl_setopt($this->curlContext, CURLOPT_POSTFIELDS, array());
+        curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array());
         break;
 
       default:
@@ -422,8 +467,8 @@ class CurlConnection extends HttpConnection {
     }
 
     if ($this->reuseConnection) {
-      curl_setopt($this->curlContext, CURLOPT_POST, FALSE);
-      curl_setopt($this->curlContext, CURLOPT_HTTPHEADER, array());
+      curl_setopt(self::$curlContext, CURLOPT_POST, FALSE);
+      curl_setopt(self::$curlContext, CURLOPT_HTTPHEADER, array());
     }
     else {
       $this->unallocateCurlContext();
@@ -437,95 +482,88 @@ class CurlConnection extends HttpConnection {
   }
 
   /**
-   * Do a patch request, used for partial updates of a resource
-   *
-   *
-   *
-   * @param string $url
-   *   The URL to post the request to. Should start with the
-   *   protocol. For example: http://.
-   * @param string $type
-   *   This paramerter must be one of: string, file.
-   * @param string $data
-   *   What this parameter contains is decided by the $type parameter.
-   *
-   * @throws HttpConnectionException
-   *
-   * @return array
-   *   Associative array containing:
-   *   * $return['status'] = The HTTP status code
-   *   * $return['headers'] = The HTTP headers of the reply
-   *   * $return['content'] = The body of the HTTP reply
-   */
-  public function patchRequest($url, $type = 'none', $data = NULL, $content_type = NULL) {
-    return $this->postOrPatchRequest('PATCH', $url, $type, $data, $content_type);
-  }
-
-  /**
-   * Post a request to the server. This is primarily used for
-   * sending files.
-   *
-   * @todo Test this for posting general form data. (Other then files.)
-   *
-   * @param string $url
-   *   The URL to post the request to. Should start with the
-   *   protocol. For example: http://.
-   * @param string $type
-   *   This paramerter must be one of: string, file.
-   * @param string $data
-   *   What this parameter contains is decided by the $type parameter.
-   *
-   * @throws HttpConnectionException
-   *
-   * @return array
-   *   Associative array containing:
-   *   * $return['status'] = The HTTP status code
-   *   * $return['headers'] = The HTTP headers of the reply
-   *   * $return['content'] = The body of the HTTP reply
+   * @see HttpConnection::postRequest
    */
   public function postRequest($url, $type = 'none', $data = NULL, $content_type = NULL) {
-    return $this->postOrPatchRequest('POST', $url, $type, $data, $content_type );
+    $this->setupCurlContext($url);
+    curl_setopt(self::$curlContext, CURLOPT_CUSTOMREQUEST, 'POST');
+    curl_setopt(self::$curlContext, CURLOPT_POST, TRUE);
+
+    switch (strtolower($type)) {
+      case 'string':
+        if ($content_type) {
+          $headers = array("Content-Type: $content_type");
+        }
+        else {
+          $headers = array("Content-Type: text/plain");
+        }
+        curl_setopt(self::$curlContext, CURLOPT_HTTPHEADER, $headers);
+        curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, $data);
+        break;
+
+      case 'file':
+        if ($content_type) {
+          curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data;type=$content_type"));
+        }
+        else {
+          curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data"));
+        }
+        break;
+
+      case 'none':
+        curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array());
+        break;
+
+      default:
+        throw new HttpConnectionException('$type must be: string, file. ' . "($type).", 0);
+    }
+
+    // Ugly substitute for a try catch finally block.
+    $exception = NULL;
+    try {
+      $results = $this->doCurlRequest();
+    } catch (HttpConnectionException $e) {
+      $exception = $e;
+    }
+
+    if ($this->reuseConnection) {
+      curl_setopt(self::$curlContext, CURLOPT_POST, FALSE);
+      curl_setopt(self::$curlContext, CURLOPT_HTTPHEADER, array());
+    }
+    else {
+      $this->unallocateCurlContext();
+    }
+
+    if ($exception) {
+      throw $exception;
+    }
+
+    return $results;
   }
 
   /**
-   * Send a HTTP PUT request to URL.
-   *
-   * @param string $url
-   *   The URL to post the request to. Should start with the
-   *   protocol. For example: http://.
-   * @param string $type
-   *   This paramerter must be one of: string, file.
-   * @param string $file
-   *   What this parameter contains is decided by the $type parameter.
-   *
-   * @throws HttpConnectionException
-   *
-   * @return array
-   *   Associative array containing:
-   *   * $return['status'] = The HTTP status code
-   *   * $return['headers'] = The HTTP headers of the reply
-   *   * $return['content'] = The body of the HTTP reply
+   * @see HttpConnection::putRequest
    */
   function putRequest($url, $type = 'none', $file = NULL) {
     $this->setupCurlContext($url);
-    curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'PUT');
+    curl_setopt(self::$curlContext, CURLOPT_CUSTOMREQUEST, 'PUT');
     switch (strtolower($type)) {
       case 'string':
         $fh = fopen('php://memory', 'rw');
         fwrite($fh, $file);
         rewind($fh);
         $size = strlen($file);
-        curl_setopt($this->curlContext, CURLOPT_PUT, TRUE);
-        curl_setopt($this->curlContext, CURLOPT_INFILE, $fh);
-        curl_setopt($this->curlContext, CURLOPT_INFILESIZE, $size);
+        curl_setopt(self::$curlContext, CURLOPT_PUT, TRUE);
+        curl_setopt(self::$curlContext, CURLOPT_INFILE, $fh);
+        curl_setopt(self::$curlContext, CURLOPT_INFILESIZE, $size);
         break;
 
       case 'file':
         $fh = fopen($file, 'r');
         $size = filesize($file);
-        curl_setopt($this->curlContext, CURLOPT_PUT, TRUE);
-        curl_setopt($this->curlContext, CURLOPT_INFILE, $fh);
-        curl_setopt($this->curlContext, CURLOPT_INFILESIZE, $size);
+        curl_setopt(self::$curlContext, CURLOPT_PUT, TRUE);
+        curl_setopt(self::$curlContext, CURLOPT_INFILE, $fh);
+        curl_setopt(self::$curlContext, CURLOPT_INFILESIZE, $size);
         break;
 
       case 'none':
@@ -544,9 +582,9 @@ class CurlConnection extends HttpConnection {
     }
 
     if ($this->reuseConnection) {
-      //curl_setopt($this->curlContext, CURLOPT_PUT, FALSE);
-      //curl_setopt($this->curlContext, CURLOPT_INFILE, 'default');
-      //curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, FALSE);
+      //curl_setopt(self::$curlContext, CURLOPT_PUT, FALSE);
+      //curl_setopt(self::$curlContext, CURLOPT_INFILE, 'default');
+      //curl_setopt(self::$curlContext, CURLOPT_CUSTOMREQUEST, FALSE);
       // We can't unallocate put requests becuase CURLOPT_INFILE can't be undone
       // this is ugly, but it gets the job done for now.
       $this->unallocateCurlContext();
@@ -567,47 +605,45 @@ class CurlConnection extends HttpConnection {
   }
 
   /**
-   * Send a HTTP GET request to URL.
-   *
-   * @param string $url
-   *   The URL to post the request to. Should start with the
-   *   protocol. For example: http://.
-   *
-   * @throws HttpConnectionException
-   *
-   * @return array
-   *   Associative array containing:
-   *   * $return['status'] = The HTTP status code
-   *   * $return['headers'] = The HTTP headers of the reply
-   *   * $return['content'] = The body of the HTTP reply
+   * @see HttpConnection::getRequest
    */
-  function getRequest($url, $headers_only = FALSE) {
+  function getRequest($url, $headers_only = FALSE, $file = NULL) {
     $this->setupCurlContext($url);
-    if($headers_only){
-      curl_setopt($this->curlContext, CURLOPT_NOBODY, TRUE);
-      curl_setopt($this->curlContext, CURLOPT_HEADER, TRUE);
-      //curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'HEADER');
+
+    if ($headers_only) {
+      curl_setopt(self::$curlContext, CURLOPT_NOBODY, TRUE);
+      curl_setopt(self::$curlContext, CURLOPT_HEADER, TRUE);
     } else {
-    curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'GET');
-    curl_setopt($this->curlContext, CURLOPT_HTTPGET, TRUE);
+      curl_setopt(self::$curlContext, CURLOPT_CUSTOMREQUEST, 'GET');
+      curl_setopt(self::$curlContext, CURLOPT_HTTPGET, TRUE);
     }
-    
+
+    if ($file) {
+      $file = fopen($file, 'w+');
+      curl_setopt(self::$curlContext, CURLOPT_FILE, $file);
+      curl_setopt(self::$curlContext, CURLOPT_HEADER, FALSE);
+    }
 
     // Ugly substitute for a try catch finally block.
     $exception = NULL;
     try {
-      $results = $this->doCurlRequest();
+      $results = $this->doCurlRequest($file);
     } catch (HttpConnectionException $e) {
       $exception = $e;
     }
 
     if ($this->reuseConnection) {
-      curl_setopt($this->curlContext, CURLOPT_HTTPGET, FALSE);
-      curl_setopt($this->curlContext, CURLOPT_NOBODY, FALSE);
-      curl_setopt($this->curlContext, CURLOPT_HEADER, FALSE);
+      curl_setopt(self::$curlContext, CURLOPT_HTTPGET, FALSE);
+      curl_setopt(self::$curlContext, CURLOPT_NOBODY, FALSE);
+      curl_setopt(self::$curlContext, CURLOPT_HEADER, FALSE);
     }
     else {
       $this->unallocateCurlContext();
+    }
+
+    if ($file) {
+      fclose($file);
+      curl_setopt(self::$curlContext, CURLOPT_FILE, fopen('php://stdout', 'w'));
     }
 
     if ($exception) {
@@ -618,24 +654,12 @@ class CurlConnection extends HttpConnection {
   }
 
   /**
-   * Send a HTTP DELETE request to URL.
-   *
-   * @param string $url
-   *   The URL to post the request to. Should start with the
-   *   protocol. For example: http://.
-   *
-   * @throws HttpConnectionException
-   *
-   * @return array
-   *   Associative array containing:
-   *   * $return['status'] = The HTTP status code
-   *   * $return['headers'] = The HTTP headers of the reply
-   *   * $return['content'] = The body of the HTTP reply
+   * @see HttpConnection::deleteRequest
    */
   function deleteRequest($url) {
     $this->setupCurlContext($url);
 
-    curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, 'DELETE');
+    curl_setopt(self::$curlContext, CURLOPT_CUSTOMREQUEST, 'DELETE');
 
     // Ugly substitute for a try catch finally block.
     $exception = NULL;
@@ -646,7 +670,7 @@ class CurlConnection extends HttpConnection {
     }
 
     if ($this->reuseConnection) {
-      curl_setopt($this->curlContext, CURLOPT_CUSTOMREQUEST, NULL);
+      curl_setopt(self::$curlContext, CURLOPT_CUSTOMREQUEST, NULL);
     }
     else {
       $this->unallocateCurlContext();

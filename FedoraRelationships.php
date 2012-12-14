@@ -500,7 +500,7 @@ class FedoraRelsExt extends FedoraRelationships {
    */
   public function get($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
     $this->initializeDatastream();
-    return parent::internalget($this->object->id, $predicate_uri, $predicate, $object, $literal);
+    return parent::internalGet($this->object->id, $predicate_uri, $predicate, $object, $literal);
   }
 
   public function changeObjectID($id) {

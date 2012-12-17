@@ -8,7 +8,6 @@ require_once 'MagicProperty.php';
 require_once 'FedoraDate.php';
 require_once 'Datastream.php';
 require_once 'FedoraRelationships.php';
-require_once 'RepositoryQuery.php';
 
 /**
  * An abstract class defining a Object in the repository. This is the class
@@ -398,10 +397,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
     switch ($function) {
       case 'get':
         $models = array();
-        $rels_models = $this->repository->ri->sparqlQuery(
-            "SELECT ?object FROM <#ri> WHERE {" .
-              "<info:fedora/{$this->objectId}> <" . FEDORA_MODEL_URI . "hasModel> ?object . " .
-            "}");
+        $rels_models = $this->relationships->get(FEDORA_MODEL_URI, 'hasModel');
         foreach ($rels_models as $model) {
           $models[] = $model['object']['value'];
         }
@@ -412,10 +408,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
         break;
 
       case 'isset':
-        $rels_models = $this->repository->ri->sparqlQuery(
-            "SELECT ?object FROM <#ri> WHERE {" .
-              "<info:fedora/{$this->objectId}> <" . FEDORA_MODEL_URI . "hasModel> ?object . " .
-            "}");
+        $rels_models = $this->relationships->get(FEDORA_MODEL_URI, 'hasModel');
         return (count($rels_models) > 0);
         break;
 
@@ -894,12 +887,9 @@ class FedoraObject extends AbstractFedoraObject {
    * @return array
    */
   public function getParents() {
-    $collections = $this->repository->ri->sparqlQuery(
-            "SELECT ?object FROM <#ri> WHERE {" .
-            "{<info:fedora/{$this->objectId}> <" . FEDORA_RELS_EXT_URI . "isMemberOfCollection> ?object}" .
-            " UNION " .
-            "{<info:fedora/{$this->objectId}> <" . FEDORA_RELS_EXT_URI . "isMemberOf> ?object}" .
-            "}");
+    $collections = array_merge(
+            $this->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOfCollection'),
+            $this->relationships->get(FEDORA_RELS_EXT_URI, 'isMemberOf'));
     $collection_ids = array();
     foreach ($collections as $collection) {
       $collection_ids[] = $collection['object']['value'];

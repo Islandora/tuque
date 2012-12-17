@@ -403,7 +403,6 @@ abstract class AbstractFedoraObject extends AbstractObject {
               "<info:fedora/{$this->objectId}> <" . FEDORA_MODEL_URI . "hasModel> ?object . " .
               "}");
         foreach ($rels_models as $model) {
-            error_log($model['object']['value']);
           $models[] = $model['object']['value'];
         }
         if (!in_array('fedora-system:FedoraObject-3.0', $models)) {

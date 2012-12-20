@@ -110,6 +110,12 @@ class FedoraRepository extends AbstractRepository {
 
   public $api;
 
+  /**
+   * Object relations can be retrieved directly from the RELS-* datastreams
+   * (the default) or by using the resource index.
+   */
+  public $useResourceIndex = FALSE;
+
   protected $queryClass = 'RepositoryQuery';
   protected $newObjectClass = 'NewFedoraObject';
   protected $objectClass = 'FedoraObject';

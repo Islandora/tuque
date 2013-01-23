@@ -484,10 +484,10 @@ class NewFedoraObject extends AbstractFedoraObject {
         return isset($this->objectId);
       case 'set':
         $this->objectId = $value;
-        if(isset($this['RELS-EXT'])) {
+        if (isset($this['RELS-EXT'])) {
           $this->relationships->changeObjectID($value);
         }
-        if(isset($this['RELS-INT'])) {
+        if (isset($this['RELS-INT'])) {
           $this['RELS-INT']->relationships->changeObjectID($value);
         }
         break;
@@ -699,40 +699,31 @@ class FedoraObject extends AbstractFedoraObject {
   /**
    * @see AbstractObject::state
    */
-  protected function stateMagicProperty($function, $value) {
-    $previous_state = $this->objectProfile['objState'];
-    $return = parent::stateMagicProperty($function, $value);
-
-    if ($previous_state != $this->objectProfile['objState']) {
-      $this->modifyObject(array('state' => $this->objectProfile['objState']));
+  protected function stateMagicPropertySet($value) {
+    if ($this->objectProfile['objState'] != $value) {
+      $this->modifyObject(array('state' => $value));
+      parent::labelMagicProperty('set', $value);
     }
-    return $return;
   }
 
   /**
    * @see AbstractObject::label
    */
-  protected function labelMagicProperty($function, $value) {
-    $previous_label = $this->objectProfile['objLabel'];
-    $return = parent::labelMagicProperty($function, $value);
-
-    if ($previous_label != $this->objectProfile['objLabel']) {
-      $this->modifyObject(array('label' => $this->objectProfile['objLabel']));
+  protected function labelMagicPropertySet($value) {
+    if ($this->objectProfile['objLabel'] != $value) {
+      $this->modifyObject(array('label' => $value));
+      parent::labelMagicProperty('set', $value);
     }
-    return $return;
   }
 
   /**
    * @see AbstractObject::owner
    */
-  protected function ownerMagicProperty($function, $value) {
-    $previous_owner = $this->objectProfile['objOwnerId'];
-    $return = parent::ownerMagicProperty($function, $value);
-
-    if ($previous_owner != $this->objectProfile['objOwnerId']) {
-      $this->modifyObject(array('ownerId' => $this->objectProfile['objOwnerId']));
+  protected function ownerMagicPropertySet($value) {
+    if ($this->objectProfile['objOwnerId'] != $value) {
+      $this->modifyObject(array('ownerId' => $value));
+      parent::labelMagicProperty('set', $value);
     }
-    return $return;
   }
 
   /**
@@ -778,14 +769,11 @@ class FedoraObject extends AbstractFedoraObject {
   /**
    * @see AbstractObject::logMessage
    */
-  protected function logMessageMagicProperty($function, $value) {
-    $previous_message = $this->objectProfile['objLogMessage'];
-    $return = parent::logMessageMagicProperty($function, $value);
-
-    if ($previous_message != $this->objectProfile['objLogMessage']) {
-      $this->modifyObject(array('logMessage' => $this->objectProfile['objLogMessage']));
+  protected function logMessageMagicPropertySet($value) {
+    if ($this->objectProfile['objLogMessage'] != $value) {
+      $this->modifyObject(array('logMessage' => $value));
+      parent::labelMagicProperty('set', $value);
     }
-    return $return;
   }
 
   /**

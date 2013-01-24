@@ -735,6 +735,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
 
       case 'set':
         if ($this->controlGroup == 'M' || $this->controlGroup == 'X') {
+          $this->deleteTempFile();
           $this->datastreamInfo['content']['type'] = 'string';
           $this->datastreamInfo['content']['content'] = $value;
         }
@@ -829,6 +830,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
       trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
       return;
     }
+    $this->deleteTempFile();
     $this->copied = $copy;
     if ($copy) {
       $tmpfile = tempnam(sys_get_temp_dir(), 'tuque');
@@ -847,6 +849,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
       trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
       return;
     }
+    $this->deleteTempFile();
     $this->datastreamInfo['content']['type'] = 'url';
     $this->datastreamInfo['content']['content'] = $url;
   }
@@ -859,6 +862,7 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
       trigger_error("Function cannot be called on a {$this->controlGroup} datastream. Please use datastream->url.", E_USER_WARNING);
       return;
     }
+    $this->deleteTempFile();
     $this->datastreamInfo['content']['type'] = 'string';
     $this->datastreamInfo['content']['content'] = $string;
   }
@@ -884,6 +888,14 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
   }
 
   public function __destruct() {
+    $this->deleteTempFile();
+  }
+
+  /**
+   * Deletes any temp files that may be present such that we do not 'leak'
+   * over any files.
+   */
+  private function deleteTempFile() {
     if ($this->datastreamInfo['content']['type'] == 'file' && $this->copied == TRUE) {
       unlink($this->datastreamInfo['content']['content']);
     }

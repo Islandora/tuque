@@ -314,7 +314,7 @@ class FedoraRelationships {
     $document = $this->getDom();
     $xpath = $this->getXpath($document);
 
-    $result_elements = $this->getXpathResults($xpath, $subject, $predicate_uri, $predicate, $object, $literal = FALSE);
+    $result_elements = $this->getXpathResults($xpath, $subject, $predicate_uri, $predicate, $object, $literal);
 
     if ($result_elements->length > 0) {
       $return = TRUE;

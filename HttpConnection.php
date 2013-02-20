@@ -301,6 +301,11 @@ class CurlConnection extends HttpConnection {
    */
   protected function createCookieFile() {
     $this->cookieFile = tempnam(sys_get_temp_dir(), 'curlcookie');
+    // If we didn't get a place to store cookies in a temporary
+    // file, we cannot continue.
+    if (! $this->cookieFile) {
+      throw new HttpConnectionException('Could not open temporary file at '.sys_get_temp_dir(),0);
+    }
     // See if we have any cookies in the session already
     // this makes sure SESSION ids persist.
     if (isset($_SESSION[self::COOKIE_LOCATION])) {
@@ -314,7 +319,7 @@ class CurlConnection extends HttpConnection {
   protected function saveCookiesToSession() {
     // Before we go, save our fedora session cookie to the browsers session.
     if (isset($_SESSION)) {
-      $SESSION[self::COOKIE_LOCATION] = file_get_contents($this->cookieFile);
+      $_SESSION[self::COOKIE_LOCATION] = file_get_contents($this->cookieFile);
     }
   }
 

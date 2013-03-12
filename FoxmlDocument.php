@@ -86,7 +86,7 @@ class FoxmlDocument extends DOMDocument {
       $datastream->setAttribute('CONTROL_GROUP', $control_group);
     }
     if (isset($versionable)) {
-      $datastream->setAttribute('VERSIONABLE', $versionable);
+      $datastream->setAttribute('VERSIONABLE', $versionable ? 'true' : 'false');
     }
     return $datastream;
   }

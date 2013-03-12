@@ -44,6 +44,7 @@ class FoxmlDocumentTest extends PHPUnit_Framework_TestCase {
     $inline->label = 'MODS record';
     $inline->checksumType = 'MD5';
     $inline->setContentFromString($this->mods_string);
+    $inline->versionable = FALSE;
     $this->fedora_object->ingestDatastream($inline);
     $managed = $this->fedora_object->constructDatastream('MANAGED', 'M');
     $managed->label = 'Managed datastream';
@@ -82,26 +83,26 @@ class FoxmlDocumentTest extends PHPUnit_Framework_TestCase {
   public function testFOXMLLabel() {
     $this->assertEquals('Test label', $this->object->label);
   }
-  
+
   public function testFOXMLOwner() {
-    
+
     $this->assertEquals('Test', $this->object->owner);
   }
-  
+
   public function testFOXMLPid() {
-    
+
     $this->assertEquals($this->object->id, $this->testPid);
     $this->assertTrue(isset($this->object->id));
   }
-   
+
   public function testFOXMLState() {
     $this->assertEquals('A', $this->object->state);
   }
-  
+
   public function testFOXMLDS() {
-    $this->assertEquals(5, count($this->object));    
+    $this->assertEquals(5, count($this->object));
   }
-  
+
   public function testFOXMLDSDC() {
     $this->assertTrue(isset($this->object['DC']));
     $this->assertFalse(isset($this->object['foo']));
@@ -109,7 +110,7 @@ class FoxmlDocumentTest extends PHPUnit_Framework_TestCase {
     $this->assertInstanceOf('FedoraDatastream', $this->object['DC']);
     $this->assertEquals('DC', $this->object['DC']->id);
   }
-  
+
   public function testFOXMLDSX() {
     $this->assertTrue(isset($this->object['INLINE']));
     $this->assertInstanceOf('FedoraDatastream', $this->object['INLINE']);
@@ -117,7 +118,7 @@ class FoxmlDocumentTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals($this->mods_string, $this->object['INLINE']->content);
     $this->assertEquals('MD5', $this->object['INLINE']->checksumType);
   }
-  
+
   public function testFOXMLDSM() {
     $this->assertTrue(isset($this->object['MANAGED']));
     $this->assertInstanceOf('FedoraDatastream', $this->object['MANAGED']);
@@ -125,21 +126,33 @@ class FoxmlDocumentTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals($this->dc_content, $this->object['MANAGED']->content);
     $this->assertEquals('MD5', $this->object['MANAGED']->checksumType);
   }
-  
+
   public function testFOXMLDSR() {
     $this->assertTrue(isset($this->object['REDIRECT']));
     $this->assertInstanceOf('FedoraDatastream', $this->object['REDIRECT']);
     $this->assertEquals('REDIRECT', $this->object['REDIRECT']->id);
     $this->assertEquals($this->dc_content, $this->object['REDIRECT']->content);
-    $this->assertEquals('MD5', $this->object['REDIRECT']->checksumType);    
+    $this->assertEquals('MD5', $this->object['REDIRECT']->checksumType);
   }
-  
+
   public function testFOXMLDSE() {
     $this->assertTrue(isset($this->object['EXTERNAL']));
     $this->assertInstanceOf('FedoraDatastream', $this->object['EXTERNAL']);
     $this->assertEquals('EXTERNAL', $this->object['EXTERNAL']->id);
     $this->assertEquals($this->dc_content, $this->object['EXTERNAL']->content);
-    $this->assertEquals('MD5', $this->object['EXTERNAL']->checksumType); 
+    $this->assertEquals('MD5', $this->object['EXTERNAL']->checksumType);
+  }
+
+  public function testFoxmlDsVersionable() {
+    $this->assertTrue($this->object['MANAGED']->versionable);
+  }
+
+  public function testFoxmlDsNotVersionable() {
+    $this->assertFalse($this->object['INLINE']->versionable);
+  }
+
+  public function testFoxmlDsLable() {
+    $this->assertEquals('Managed datastream', $this->object['MANAGED']->label);
   }
 
 }

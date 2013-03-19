@@ -518,7 +518,14 @@ class NewFedoraObject extends AbstractFedoraObject {
    */
   public function ingestDatastream(&$ds) {
     if (!isset($this->datastreams[$ds->id])) {
-      $this->datastreams[$ds->id] = $ds;
+      // Break the reference.
+      $datastream = $ds;
+      if (!($datastream instanceof NewFedoraDatastream)) {
+        // Wrap the datastream... Make it act like a NewFedoraDatastream
+        // before making any changes...
+        $datastream = new CopyOnWriteFedoraDatastream($this, $datastream);
+      }
+      $this->datastreams[$ds->id] = $datastream;
       return TRUE;
     }
     else {
@@ -797,7 +804,10 @@ class FedoraObject extends AbstractFedoraObject {
         'formatURI' => $ds->format,
         'checksumType' => $ds->checksumType,
         'mimeType' => $ds->mimetype,
-        'logMessage' => $ds->logMessage,
+        // Assume NewFedoraObjects will have a log message set.
+        'logMessage' => ($ds instanceof NewFedoraObject) ?
+          $ds->logMessage:
+          "Copied datastream from {$ds->parent->id}.",
       );
       $temp = tempnam(sys_get_temp_dir(), 'tuque');
       $return = $ds->getContent($temp);
@@ -811,9 +821,9 @@ class FedoraObject extends AbstractFedoraObject {
       }
       $dsinfo = $this->repository->api->m->addDatastream($this->id, $ds->id, $type, $content, $params);
       unlink($temp);
-      $ds = new $this->fedoraDatastreamClass($ds->id, $this, $this->repository, $dsinfo);
-      $this->datastreams[$ds->id] = $ds;
-      return $ds;
+      $datastream = new $this->fedoraDatastreamClass($ds->id, $this, $this->repository, $dsinfo);
+      $this->datastreams[$datastream->id] = $datastream;
+      return $datastream;
     }
     else {
       return FALSE;
@@ -886,3 +896,4 @@ class FedoraObject extends AbstractFedoraObject {
   }
 
 }
+

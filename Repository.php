@@ -26,13 +26,15 @@ abstract class AbstractRepository extends MagicProperty {
    *   - A namespace: An ID will be assigned in this namespace.
    *   - A whole ID: The whole ID must contains a namespace and a identifier in
    *     the form NAMESPACE:IDENTIFIER
+   * @param boolean $create_uuid
+   *   Indicates if the objects ID should contain a UUID.
    *
    * @return AbstractObject
    *   Returns an instantiated AbstractObject object that can be manipulated.
    *   This object will not actually be created in the repository until the
    *   ingest method is called.
    */
-  abstract public function constructObject($id = NULL);
+  abstract public function constructObject($id = NULL, $create_uuid = FALSE);
 
   /**
    * This ingests a new object into the repository.
@@ -81,6 +83,36 @@ abstract class AbstractRepository extends MagicProperty {
    * @todo Flesh out the function definition for this.
    */
   abstract public function findObjects(array $search);
+
+  /**
+   * Will return an unused identifier for an object.
+   *
+   * @note
+   *   It is not mathematically impossible to have collisions if the
+   *   $create_uuid parameter is set to true.
+   *
+   * @param mixed $namespace
+   *   NULL if we should use the default namespace.
+   *   string the namespace to be used for the identifier.
+   * @param boolean $create_uuid
+   *   True if a V4 UUID should be used as part of the identifier.
+   * @param integer $number_of_identifiers
+   *   The number of identifers to return
+   *   Defaults to 1.
+   *
+   * @return mixed
+   *   string An identifier for an object.
+   *   array  An array of identifiers for an object.
+   *     @code
+   *       Array
+   *         (
+   *           [0] => test:7
+   *           [1] => test:8
+   *         )
+   *     @endcode
+   */
+  abstract public function getNextIdentifier($namespace = NULL, $create_uuid = FALSE, $number_of_identifiers = 1);
+
 }
 
 /**
@@ -137,20 +169,110 @@ class FedoraRepository extends AbstractRepository {
   }
 
   /**
-   * @todo validate the ID
-   * @todo catch the getNextPid errors
-   *
    * @see AbstractRepository::constructObject
    */
-  public function constructObject($id = NULL) {
-    $exploded = explode(':', $id);
+  public function constructObject($id = NULL, $create_uuid = FALSE) {
+    $exploded_id = explode(':', $id);
+    // If no namespace or PID provided.
     if (!$id) {
-      $id = $this->api->m->getNextPid();
+      $id = $this->getNextIdentifier(NULL, $create_uuid);
     }
-    elseif (count($exploded) == 1) {
-      $id = $this->api->m->getNextPid($exploded[0]);
+    // If namespace is provided.
+    elseif (count($exploded_id) == 1) {
+      $id = $this->getNextIdentifier($exploded_id[0], $create_uuid);
     }
+    // If a full PID is provided we fall through to this.
     return new $this->newObjectClass($id, $this);
+  }
+
+  /**
+   *  @todo validate the ID
+   *  @todo catch the getNextPid errors
+   *
+   *  @see AbstractRepository::getNextIdentifier
+   */
+  public function getNextIdentifier($namespace = NULL, $create_uuid = FALSE, $number_of_identifiers = 1) {
+    $pids = array();
+
+    if ($create_uuid) {
+      if (is_null($namespace)) {
+        $repository_info = $this->api->a->describeRepository();
+        $namespace = $repository_info['repositoryPID']['PID-namespaceIdentifier'];
+      }
+      if ($number_of_identifiers > 1) {
+        for ($i = 1; $i <= $number_of_identifiers; $i++) {
+          $pids[] = $namespace . ':' . $this->getUuid();
+        }
+      }
+      else {
+        $pids = $namespace . ':' . $this->getUuid();
+      }
+    }
+    else {
+      $pids = $this->api->m->getNextPid($namespace, $number_of_identifiers);
+    }
+
+    return $pids;
+  }
+
+  /**
+   * This method will return a valid UUID based on V4 methods.
+   *
+   * @return string
+   *   A valid V4 UUID.
+   */
+  protected function getUuid() {
+    $bytes = openssl_random_pseudo_bytes(2);
+    $add_mask = $this->convertHexToBin('4000');
+    $negate_mask = $this->convertHexToBin('C000');
+    // Make start with 11.
+    $manipulated_bytes = $bytes | $negate_mask;
+    // Make start with 01.
+    $manipulated_bytes = $manipulated_bytes ^ $add_mask;
+    $hex_string_10 = bin2hex($manipulated_bytes);
+
+    return sprintf('%08s-%04s-4%03s-%s-%012s',
+      bin2hex(openssl_random_pseudo_bytes(4)),
+      bin2hex(openssl_random_pseudo_bytes(2)),
+      // Four most significant bits holds version number 4.
+      substr(bin2hex(openssl_random_pseudo_bytes(2)), 1),
+      // Two most significant bits holds zero and one for variant DCE1.1
+      $hex_string_10,
+      bin2hex(openssl_random_pseudo_bytes(6))
+    );
+  }
+
+  /**
+   * Will convert a hexadecimal string into a representative byte string.
+   *
+   * @note
+   *   This method can be eliminated in PHP >= 5.4.
+   *   http://php.net/manual/en/function.hex2bin.php#110973
+   *
+   * @param string $hex
+   *   A string representation of a hexadecimal number.
+   *
+   * @return string
+   *   A byte string holding the bits indicated by the hex string.
+   */
+  protected function convertHexToBin($hex) {
+    $length_of_hex = strlen($hex);
+    $byte_string = "";
+    $byte_counter = 0;
+    while ($byte_counter < $length_of_hex) {
+      $current_hex_byte = substr($hex, $byte_counter, 2);
+      $current_binary_byte = pack("H*", $current_hex_byte);
+
+      if ($byte_counter == 0) {
+        $byte_string = $current_binary_byte;
+      }
+      else {
+        $byte_string .= $current_binary_byte;
+      }
+      $byte_counter += 2;
+    }
+
+    return $byte_string;
   }
 
   /**
@@ -158,7 +280,7 @@ class FedoraRepository extends AbstractRepository {
    * @todo error handling
    */
   public function ingestObject(NewFedoraObject &$object) {
-    // we want all the managed datastreams to be uploaded
+    // We want all the managed datastreams to be uploaded.
     foreach ($object as $ds) {
       if ($ds->controlGroup == 'M') {
         $temp = tempnam(sys_get_temp_dir(), 'tuque');

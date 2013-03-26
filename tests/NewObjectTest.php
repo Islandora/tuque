@@ -21,6 +21,10 @@ class NewObjectTest extends ObjectTest {
     $string2 = FedoraTestHelpers::randomString(10);
     $this->testDsid = FedoraTestHelpers::randomCharString(10);
     $this->testPid = "$string1:$string2";
+    $string3 = FedoraTestHelpers::randomString(9);
+    $string4 = FedoraTestHelpers::randomString(9);
+    $this->testDsid2 = FedoraTestHelpers::randomCharString(9);
+    $this->testPid2 = "$string3:$string4";
 
     $this->object = $repository->constructObject($this->testPid);
     $ds = $this->object->constructDatastream($this->testDsid);
@@ -30,6 +34,14 @@ class NewObjectTest extends ObjectTest {
     $ds = $this->object->constructDatastream('DC');
     $ds->content = '<test> test </test>';
     $this->object->ingestDatastream($ds);
+
+    $this->existing_object = $repository->constructObject($this->testPid2);
+    $ds2 = $this->existing_object->constructDatastream($this->testDsid2);
+    $ds2->label = 'asdf';
+    $ds2->mimetype = 'text/plain';
+    $ds2->content = FedoraTestHelpers::randomString(10);
+    $this->existing_object->ingestDatastream($ds2);
+    $repository->ingestObject($this->existing_object);
   }
 
   protected function tearDown() {
@@ -93,5 +105,13 @@ class NewObjectTest extends ObjectTest {
       $uri = explode('/', $value);
       $this->assertEquals($newid, $uri[1]);
     }
+  }
+
+  public function testDatastreamMutation() {
+    $datastream = $this->existing_object[$this->testDsid2];
+
+    $this->assertTrue($datastream instanceof FedoraDatastream, 'Datastream exists.');
+    $this->assertTrue($this->object->ingestDatastream($datastream) !== FALSE, 'Datastream ingest succeeded.');
+    $this->assertTrue($datastream instanceof NewFedoraDatastream, 'Datastream mutated on ingestion.');
   }
 }

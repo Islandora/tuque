@@ -504,6 +504,39 @@ class NewFedoraObject extends AbstractFedoraObject {
     return parent::constructDatastream($id, $control_group);
   }
 
+
+  /**
+   * Create a NewFedoraDatastream copy, and wrap it instead of what we had.
+   *
+   * This is necessary to avoid the possibility of changing a datastream for
+   * another object, when copying datastreams between objects.
+   */
+  private function createNewDatastreamCopy(AbstractFedoraDatastream &$datastream) {
+    $old_datastream = $datastream;
+
+    $datastream = $this->constructDatastream($old_datastream->id, $old_datastream->controlGroup);
+
+    // Copying the datastream particulars...
+    $properties = array('checksumType', 'checksum', 'format', 'mimetype', 'versionable', 'label', 'state');
+    if (in_array($old_datastream->controlGroup, array('R', 'E'))) {
+      $properties[] = 'url';
+    }
+    else {
+      // Get the content into a file, and add the file.
+      $temp_file = tempnam(sys_get_temp_dir(), 'tuque');
+      $old_datastream->getContent($temp_file);
+      $datastream->setContentFromFile($temp_file);
+      unlink($temp_file);
+    }
+    foreach ($properties as $property) {
+      $datastream->$property = $old_datastream->$property;
+    }
+
+    $datastream->logMessage = 'Datastream contents copied.';
+
+    unset($this[$datastream->id]);
+  }
+
   /**
    * This function doesn't actually ingest the datastream, it just adds it to
    * the queue to be ingested whenever this object is ingested.
@@ -514,18 +547,15 @@ class NewFedoraObject extends AbstractFedoraObject {
    *   the datastream to be ingested
    *
    * @return mixed
-   *   FALSE on failure otherwise a instantiated FedoraDatastream.
+   *   FALSE if the datastream already exists; TRUE otherwise.
    */
   public function ingestDatastream(&$ds) {
     if (!isset($this->datastreams[$ds->id])) {
-      // Break the reference.
-      $datastream = $ds;
-      if (!($datastream instanceof NewFedoraDatastream)) {
-        // Wrap the datastream... Make it act like a NewFedoraDatastream
-        // before making any changes...
-        $datastream = new CopyOnWriteFedoraDatastream($this, $datastream);
+      if (!($ds instanceof NewFedoraDatastream)) {
+        // Create a NewFedoraDatastream copy.
+        $this->createNewDatastreamCopy($ds);
       }
-      $this->datastreams[$ds->id] = $datastream;
+      $this->datastreams[$ds->id] = $ds;
       return TRUE;
     }
     else {
@@ -821,9 +851,9 @@ class FedoraObject extends AbstractFedoraObject {
       }
       $dsinfo = $this->repository->api->m->addDatastream($this->id, $ds->id, $type, $content, $params);
       unlink($temp);
-      $datastream = new $this->fedoraDatastreamClass($ds->id, $this, $this->repository, $dsinfo);
-      $this->datastreams[$datastream->id] = $datastream;
-      return $datastream;
+      $ds = new $this->fedoraDatastreamClass($ds->id, $this, $this->repository, $dsinfo);
+      $this->datastreams[$ds->id] = $ds;
+      return $ds;
     }
     else {
       return FALSE;

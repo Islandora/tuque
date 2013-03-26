@@ -216,4 +216,15 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
     $this->object->models = array('router:killah', 'jon:is:great');
     $this->assertEquals(array('router:killah', 'jon:is:great', 'fedora-system:FedoraObject-3.0'), $this->object->models);
   }
+
+  public function testDatastreamMutation() {
+    $newds = $this->object->constructDatastream('test', 'M');
+    $newds->label = 'I am a new day!';
+    $newds->mimetype = 'text/plain';
+    $newds->content = 'walla walla';
+
+    $this->assertTrue($newds instanceof NewFedoraDatastream, 'Datastream is new.');
+    $this->assertTrue($this->object->ingestDatastream($newds) !== FALSE, 'Datastream ingest succeeded.');
+    $this->assertTrue($newds instanceof FedoraDatastream, 'Datastream mutated on ingestion.');
+  }
 }

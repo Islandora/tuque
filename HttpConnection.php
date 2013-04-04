@@ -613,6 +613,13 @@ class CurlConnection extends HttpConnection {
    * @see HttpConnection::getRequest
    */
   function getRequest($url, $headers_only = FALSE, $file = NULL) {
+    // Need this as before we were opening a new file pointer for std for each
+    // request. When the ulimit was reached this would make things blow up.
+    static $stdout = NULL;
+
+    if ($stdout === NULL) {
+      $stdout = fopen('php://stdout', 'w');
+    }
     $this->setupCurlContext($url);
 
     if ($headers_only) {
@@ -648,7 +655,7 @@ class CurlConnection extends HttpConnection {
 
     if ($file) {
       fclose($file);
-      curl_setopt(self::$curlContext, CURLOPT_FILE, fopen('php://stdout', 'w'));
+      curl_setopt(self::$curlContext, CURLOPT_FILE, $stdout);
     }
 
     if ($exception) {

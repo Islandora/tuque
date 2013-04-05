@@ -2,7 +2,7 @@
   <php>
     <const name="FEDORAURL" value="http://localhost:8080/fedora"/>
     <const name="FEDORAUSER" value="fedoraAdmin"/>
-    <const name="FEDORAPASS" value="islandosaurus"/>
+    <const name="FEDORAPASS" value="wei9bo0eethooD"/>
   </php>
 <logging>
  <log type="coverage-html" target="../build/coverage" title="Tuque"

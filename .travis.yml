@@ -2,10 +2,14 @@ language: php
 php:
   - "5.3"
   - "5.4"
+env:
+  - FEDORA_VERSION="3.6.2"
+# broken right now, should be fixed
+#  - FEDORA_VERSION="3.5"
 before_script:
   - mysql -u root -e "create database fedora;"
   - mysql -u root -e "GRANT ALL PRIVILEGES ON fedora.* To 'fedora'@'localhost' IDENTIFIED BY 'fedora';"
-  - git clone git://github.com/Islandora/islandora_tomcat.git
+  - git clone -b $FEDORA_VERSION git://github.com/Islandora/islandora_tomcat.git
   - cd islandora_tomcat
   - export CATALINA_HOME='.'
   - ./bin/startup.sh

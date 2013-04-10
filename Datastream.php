@@ -842,7 +842,10 @@ class NewFedoraDatastream extends AbstractFedoraDatastream {
   }
 
   /**
-   *  @see AbstractDatastream::setContentFromUrl
+   * @see AbstractDatastream::setContentFromUrl
+   *
+   * @param string $url
+   *   Https (SSL) URL's will cause this to fail.
    */
   public function setContentFromUrl($url) {
     if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {
@@ -1648,6 +1651,9 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
 
   /**
    * @see AbstractDatastream::setContentFromUrl
+   *
+   * @param string $url
+   *   Https (SSL) URL's will cause this to fail.
    */
   public function setContentFromUrl($url) {
     if ($this->controlGroup == 'E' || $this->controlGroup == 'R') {

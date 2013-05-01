@@ -1,14 +1,13 @@
 <?php
-require_once "FedoraRelationships.php";
+require_once 'RepositoryFactory.php';
+require_once 'tests/TestHelpers.php';
 
 class FedoraRelationshipsInternalTest extends PHPUnit_Framework_TestCase {
 
   function setUp() {
-    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
-    $this->api = new FedoraApi($connection);
-    $cache = new SimpleCache();
-    $repository = new FedoraRepository($this->api, $cache);
-    $this->object = $repository->constructObject('test:awesome');
+    $this->repository = RepositoryFactory::getRepository('fedora3', new RepositoryConfig(FEDORAURL, FEDORAUSER, FEDORAPASS));
+    $this->api = $this->repository->api;
+    $this->object = $this->repository->constructObject('test:awesome');
     $this->datastream = $this->object->constructDatastream('test');
     $this->datastream2 = $this->object->constructDatastream('test2');
 

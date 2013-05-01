@@ -10,7 +10,7 @@
  */
 
 require_once 'RepositoryException.php';
-require_once 'RepositoryConnection.php';
+require_once 'implementations/fedora3/RepositoryConnection.php';
 
 /**
  * This is a simple class that brings FedoraApiM and FedoraApiA together.
@@ -308,7 +308,7 @@ class FedoraApiA {
 
     $this->connection->addParam($request, $seperator, 'asOfDateTime', $as_of_date_time);
 
-    $response = $this->connection->getRequest($request, FALSE, $file);
+    $response = $this->connection->getRequest($request, array('file' => $file));
     $response = $this->serializer->getDatastreamDissemination($response, $file);
     return $response;
   }

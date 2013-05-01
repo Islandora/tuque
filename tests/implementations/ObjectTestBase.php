@@ -1,38 +1,9 @@
 <?php
 
-require_once 'FedoraApi.php';
-require_once 'FedoraApiSerializer.php';
-require_once 'Object.php';
-require_once 'Repository.php';
-require_once 'Cache.php';
-require_once 'TestHelpers.php';
+require_once 'RepositoryFactory.php';
+require_once 'tests/TestHelpers.php';
 
-class ObjectTest extends PHPUnit_Framework_TestCase {
-
-  protected function setUp() {
-    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
-    $this->api = new FedoraApi($connection);
-    $cache = new SimpleCache();
-    $repository = new FedoraRepository($this->api, $cache);
-
-    // create an object
-    $string1 = FedoraTestHelpers::randomString(10);
-    $string2 = FedoraTestHelpers::randomString(10);
-    $this->testDsid = FedoraTestHelpers::randomCharString(10);
-    $this->testPid = "$string1:$string2";
-    $this->api->m->ingest(array('pid' => $this->testPid));
-    $this->api->m->addDatastream($this->testPid, $this->testDsid, 'string', '<test> test </test>', NULL);
-    $this->object = new FedoraObject($this->testPid, $repository);
-  }
-
-  protected function tearDown() {
-    $this->api->m->purgeObject($this->testPid);
-  }
-
-  protected function getValue($data) {
-    $values = $this->api->a->getObjectProfile($this->testPid);
-    return $values[$data];
-  }
+class ObjectTestBase extends PHPUnit_Framework_TestCase {
 
   public function testValuesInFedora() {
     $this->object->label = 'foo';
@@ -215,16 +186,5 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
   public function testObjectModelsAdd() {
     $this->object->models = array('router:killah', 'jon:is:great');
     $this->assertEquals(array('router:killah', 'jon:is:great', 'fedora-system:FedoraObject-3.0'), $this->object->models);
-  }
-
-  public function testDatastreamMutation() {
-    $newds = $this->object->constructDatastream('test', 'M');
-    $newds->label = 'I am a new day!';
-    $newds->mimetype = 'text/plain';
-    $newds->content = 'walla walla';
-
-    $this->assertTrue($newds instanceof NewFedoraDatastream, 'Datastream is new.');
-    $this->assertTrue($this->object->ingestDatastream($newds) !== FALSE, 'Datastream ingest succeeded.');
-    $this->assertTrue($newds instanceof FedoraDatastream, 'Datastream mutated on ingestion.');
   }
 }

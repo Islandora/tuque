@@ -1,20 +1,13 @@
 <?php
 
-require_once 'FedoraApi.php';
-require_once 'FedoraApiSerializer.php';
-require_once 'Object.php';
-require_once 'Repository.php';
-require_once 'Cache.php';
-require_once 'TestHelpers.php';
-require_once 'tests/ObjectTest.php';
+require_once 'RepositoryFactory.php';
+require_once 'tests/implementations/ObjectTestBase.php';
 
-class NewObjectTest extends ObjectTest {
+class NewObjectTest extends ObjectTestBase {
 
   protected function setUp() {
-    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
-    $this->api = new FedoraApi($connection);
-    $cache = new SimpleCache();
-    $repository = new FedoraRepository($this->api, $cache);
+    $this->repository = RepositoryFactory::getRepository('fedora3', new RepositoryConfig(FEDORAURL, FEDORAUSER, FEDORAPASS));
+    $this->api = $this->repository->api;
 
     // create an object
     $string1 = FedoraTestHelpers::randomString(10);
@@ -26,7 +19,7 @@ class NewObjectTest extends ObjectTest {
     $this->testDsid2 = FedoraTestHelpers::randomCharString(9);
     $this->testPid2 = "$string3:$string4";
 
-    $this->object = $repository->constructObject($this->testPid);
+    $this->object = $this->repository->constructObject($this->testPid);
     $ds = $this->object->constructDatastream($this->testDsid);
     $ds->content = "\n<test> test </test>\n";
     $this->object->ingestDatastream($ds);
@@ -35,13 +28,13 @@ class NewObjectTest extends ObjectTest {
     $ds->content = '<test> test </test>';
     $this->object->ingestDatastream($ds);
 
-    $this->existing_object = $repository->constructObject($this->testPid2);
+    $this->existing_object = $this->repository->constructObject($this->testPid2);
     $ds2 = $this->existing_object->constructDatastream($this->testDsid2);
     $ds2->label = 'asdf';
     $ds2->mimetype = 'text/plain';
     $ds2->content = FedoraTestHelpers::randomString(10);
     $this->existing_object->ingestDatastream($ds2);
-    $repository->ingestObject($this->existing_object);
+    $this->repository->ingestObject($this->existing_object);
   }
 
   protected function tearDown() {

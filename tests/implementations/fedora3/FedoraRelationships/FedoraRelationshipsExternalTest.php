@@ -1,13 +1,13 @@
 <?php
-require_once "FedoraRelationships.php";
+require_once 'RepositoryFactory.php';
+require_once 'tests/TestHelpers.php';
 
 class FedoraRelationshipsExternalTest extends PHPUnit_Framework_TestCase {
 
   function setUp() {
-    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
-    $this->api = new FedoraApi($connection);
-    $cache = new SimpleCache();
-    $this->repository = new FedoraRepository($this->api, $cache);
+    $this->repository = RepositoryFactory::getRepository('fedora3', new RepositoryConfig(FEDORAURL, FEDORAUSER, FEDORAPASS));
+    $this->api = $this->repository->api;
+
     $this->object = $this->repository->constructObject('test:awesome');
 
     $this->object->relationships->add(ISLANDORA_RELS_EXT_URI, 'hasAwesomeness', 'jonathan:green');

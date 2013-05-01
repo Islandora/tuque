@@ -193,12 +193,13 @@ abstract class HttpConnection {
    * @param string $url
    *   The URL to post the request to. Should start with the
    *   protocol. For example: http://.
-   * @param boolean $headers_only
-   *   This will cause curl to only return the HTTP headers.
-   * @param string $file
-   *   A file to output the content of request to. If this is set then headers
-   *   are not returned and the 'content' and 'headers' keys of the return isn't
-   *   set.
+   * @param array $options
+   *   (Optional) An associative array that can contain the keys
+   *   - headers_only: Boolean. This will only return the HTTP headers.
+   *   - file: String. A file to output the content of request to. If this is
+   *     set then headers are not returned and the 'content' and 'headers'
+   *     keys of the return isn't set.
+   *   - headers: An array of headers to add to the requests.
    *
    * @throws HttpConnectionException
    *
@@ -208,7 +209,7 @@ abstract class HttpConnection {
    *   * $return['headers'] = The HTTP headers of the reply
    *   * $return['content'] = The body of the HTTP reply
    */
-  abstract public function getRequest($url, $headers_only = FALSE, $file = FALSE);
+  abstract public function getRequest($url, $options = array());
 
   /**
    * Send a HTTP PUT request to URL.
@@ -419,6 +420,8 @@ class CurlConnection extends HttpConnection {
       $http_error_string = trim($http_error_string);
     }
 
+    curl_setopt(self::$curlContext, CURLOPT_HTTPHEADER, array());
+
     // Throw an exception if this isn't a 2XX response.
     if (!preg_match("/^2/", $info['http_code'])) {
       throw new HttpConnectionException($http_error_string, $info['http_code'], $response);
@@ -612,7 +615,8 @@ class CurlConnection extends HttpConnection {
   /**
    * @see HttpConnection::getRequest
    */
-  function getRequest($url, $headers_only = FALSE, $file = NULL) {
+  function getRequest($url, $options = array()) {
+
     // Need this as before we were opening a new file pointer for std for each
     // request. When the ulimit was reached this would make things blow up.
     static $stdout = NULL;
@@ -622,7 +626,7 @@ class CurlConnection extends HttpConnection {
     }
     $this->setupCurlContext($url);
 
-    if ($headers_only) {
+    if (isset($options['headers_only']) && $options['headers_only'] === TRUE) {
       curl_setopt(self::$curlContext, CURLOPT_NOBODY, TRUE);
       curl_setopt(self::$curlContext, CURLOPT_HEADER, TRUE);
     } else {
@@ -630,10 +634,17 @@ class CurlConnection extends HttpConnection {
       curl_setopt(self::$curlContext, CURLOPT_HTTPGET, TRUE);
     }
 
-    if ($file) {
-      $file = fopen($file, 'w+');
+    if (isset($options['file'])) {
+      $file = fopen($options['file'], 'w+');
       curl_setopt(self::$curlContext, CURLOPT_FILE, $file);
       curl_setopt(self::$curlContext, CURLOPT_HEADER, FALSE);
+    }
+    else {
+      $file = NULL;
+    }
+
+    if (isset($options['headers'])) {
+      curl_setopt(self::$curlContext, CURLOPT_HTTPHEADER, $options['headers']);
     }
 
     // Ugly substitute for a try catch finally block.

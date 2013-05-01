@@ -1,20 +1,13 @@
 <?php
 
-require_once 'Datastream.php';
-require_once 'FedoraApi.php';
-require_once 'FedoraApiSerializer.php';
-require_once 'Object.php';
-require_once 'Repository.php';
-require_once 'Cache.php';
-require_once 'TestHelpers.php';
+require_once 'RepositoryFactory.php';
+require_once 'tests/TestHelpers.php';
 
 class NewDatastreamTest extends PHPUnit_Framework_TestCase {
 
   protected function setUp() {
-    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
-    $this->api = new FedoraApi($connection);
-    $cache = new SimpleCache();
-    $this->repository = new FedoraRepository($this->api, $cache);
+    $this->repository = RepositoryFactory::getRepository('fedora3', new RepositoryConfig(FEDORAURL, FEDORAUSER, FEDORAPASS));
+    $this->api = $this->repository->api;
 
     // create an object
     $string1 = FedoraTestHelpers::randomString(10);

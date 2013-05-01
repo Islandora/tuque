@@ -1,5 +1,5 @@
 <?php
-require_once "FedoraDate.php";
+require_once "implementations/fedora3/FedoraDate.php";
 
 class FedoraDateTest extends PHPUnit_Framework_TestCase {
 

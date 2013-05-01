@@ -1,26 +1,19 @@
 <?php
 
-require_once 'FedoraApi.php';
-require_once 'FedoraApiSerializer.php';
-require_once 'Object.php';
-require_once 'Repository.php';
-require_once 'Cache.php';
-require_once 'TestHelpers.php';
-require_once 'FoxmlDocument.php';
+require_once 'RepositoryFactory.php';
+require_once 'tests/TestHelpers.php';
 
 class FoxmlDocumentTest extends PHPUnit_Framework_TestCase {
 
   protected function setUp() {
-    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
-    $this->api = new FedoraApi($connection);
-    $cache = new SimpleCache();
-    $repository = new FedoraRepository($this->api, $cache);
+    $this->repository = RepositoryFactory::getRepository('fedora3', new RepositoryConfig(FEDORAURL, FEDORAUSER, FEDORAPASS));
+    $this->api = $this->repository->api;
 
     // create an object and populate datastreams
     $string1 = FedoraTestHelpers::randomString(10);
     $string2 = FedoraTestHelpers::randomString(10);
     $this->testPid = "$string1:$string2";
-    $this->fedora_object = $repository->constructObject($this->testPid);
+    $this->fedora_object = $this->repository->constructObject($this->testPid);
     $this->fedora_object->owner = 'Test';
     $this->fedora_object->label = 'Test label';
     $inline = $this->fedora_object->constructDatastream('INLINE', 'X');
@@ -61,8 +54,8 @@ class FoxmlDocumentTest extends PHPUnit_Framework_TestCase {
     $redirect->url = 'http://localhost:8080/fedora/objects/fedora-system:FedoraObject-3.0/datastreams/DC/content';
     $redirect->checksumType = 'MD5';
     $this->fedora_object->ingestDatastream($redirect);
-    $repository->ingestObject($this->fedora_object);
-    $this->object = new FedoraObject($this->testPid, $repository);
+    $this->repository->ingestObject($this->fedora_object);
+    $this->object = new FedoraObject($this->testPid, $this->repository);
     $this->dc_content = '
 <oai_dc:dc xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.openarchives.org/OAI/2.0/oai_dc/ http://www.openarchives.org/OAI/2.0/oai_dc.xsd">
   <dc:title>Content Model Object for All Objects</dc:title>

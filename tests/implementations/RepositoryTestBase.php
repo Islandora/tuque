@@ -1,21 +1,9 @@
 <?php
 
-require_once 'FedoraApiSerializer.php';
-require_once 'Object.php';
-require_once 'Repository.php';
 require_once 'Cache.php';
-require_once 'TestHelpers.php';
-require_once 'RepositoryConnection.php';
-require_once 'FedoraApi.php';
+require_once 'tests/TestHelpers.php';
 
-class RepositoryTest extends PHPUnit_Framework_TestCase {
-
-  protected function setUp() {
-    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
-    $this->api = new FedoraApi($connection);
-    $cache = new SimpleCache();
-    $this->repository = new FedoraRepository($this->api, $cache);
-  }
+class RepositoryTestBase extends PHPUnit_Framework_TestCase {
 
   public function testIngestNamespace() {
     $namespace = FedoraTestHelpers::randomString(10);

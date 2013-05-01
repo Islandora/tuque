@@ -1,47 +1,9 @@
 <?php
 
-require_once 'Datastream.php';
-require_once 'FedoraApi.php';
-require_once 'FedoraApiSerializer.php';
-require_once 'Object.php';
-require_once 'Repository.php';
-require_once 'Cache.php';
-require_once 'TestHelpers.php';
+require_once 'RepositoryFactory.php';
+require_once 'tests/TestHelpers.php';
 
-class DatastreamTest extends PHPUnit_Framework_TestCase {
-
-  protected function setUp() {
-    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
-    $this->api = new FedoraApi($connection);
-    $cache = new SimpleCache();
-    $this->repository = new FedoraRepository($this->api, $cache);
-
-    // create an object
-    $string1 = FedoraTestHelpers::randomString(10);
-    $string2 = FedoraTestHelpers::randomString(10);
-    $this->testPid = "$string1:$string2";
-    $this->api->m->ingest(array('pid' => $this->testPid));
-
-    // create a DSID
-    $this->testDsid = FedoraTestHelpers::randomCharString(10);
-    $this->testDsidR = FedoraTestHelpers::randomCharString(10);
-    $this->testDsidE = FedoraTestHelpers::randomCharString(10);
-    $this->testDsidX = FedoraTestHelpers::randomCharString(10);
-    $this->testDsContents = '<test><xml/></test>';
-    $this->api->m->addDatastream($this->testPid, $this->testDsid, 'string', $this->testDsContents, array('controlGroup' => 'M'));
-    $this->api->m->addDatastream($this->testPid, $this->testDsidR, 'url', 'http://test.com.fop', array('controlGroup' => 'R'));
-    $this->api->m->addDatastream($this->testPid, $this->testDsidE, 'url', 'http://test.com.fop', array('controlGroup' => 'E'));
-    $this->api->m->addDatastream($this->testPid, $this->testDsidX, 'string', $this->testDsContents, array('controlGroup' => 'X'));
-    $this->object = new FedoraObject($this->testPid, $this->repository);
-    $this->ds = new FedoraDatastream($this->testDsid, $this->object, $this->repository);
-    $this->e = new FedoraDatastream($this->testDsidE, $this->object, $this->repository);
-    $this->r = new FedoraDatastream($this->testDsidR, $this->object, $this->repository);
-    $this->x = new FedoraDatastream($this->testDsidX, $this->object, $this->repository);
-  }
-
-  protected function tearDown() {
-    $this->api->m->purgeObject($this->testPid);
-  }
+class DatastreamTestBase extends PHPUnit_Framework_TestCase {
 
   public function testId() {
     $this->assertEquals($this->testDsid, $this->ds->id);
@@ -201,6 +163,8 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testContentSetUrl() {
+    // @todo fix.
+    $this->markTestIncomplete('We need a publically accessable place for these files.');
     $temp = tempnam(sys_get_temp_dir(), 'tuque');
     $this->ds->setContentFromUrl('http://hudson.islandora.ca/files/superlative.png');
     $actual = file_get_contents('http://hudson.islandora.ca/files/superlative.png');
@@ -241,6 +205,8 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testContentXFromUrl() {
+    // @todo fix.
+    $this->markTestIncomplete('We need a publically accessable place for these files.');
     $url = 'http://hudson.islandora.ca/files/xml.xml';
     $data = <<<foo
 <woo>

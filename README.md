@@ -6,12 +6,12 @@ Current build status:
 [![Build Status](https://travis-ci.org/Islandora/tuque.png?branch=1.x)](https://travis-ci.org/Islandora/tuque)
 
 CI Server:
-http://hudson.islandora.ca
+http://jenkins.discoverygarden.ca
 
 REQUIREMENTS
 ------------
 
-PHP 5.3+ 
+PHP 5.3+
 
 INSTALLATION
 ------------
@@ -20,7 +20,7 @@ CONFIGURATION
 -------------
 
 Additional Documentation:
-http://hudson.islandora.ca/job/Tuque%20%28Ubuntu%29/API_Documentation/?
+http://jenkins.discoverygarden.ca/job/Tuque/API_Documentation/?
 
 TROUBLESHOOTING
 ---------------

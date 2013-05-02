@@ -202,8 +202,8 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
 
   public function testContentSetUrl() {
     $temp = tempnam(sys_get_temp_dir(), 'tuque');
-    $this->ds->setContentFromUrl('http://hudson.islandora.ca/files/superlative.png');
-    $actual = file_get_contents('http://hudson.islandora.ca/files/superlative.png');
+    $this->ds->setContentFromUrl('http://jenkins.discoverygarden.ca:8080/superlative.png');
+    $actual = file_get_contents('http://jenkins.discoverygarden.ca:8080/superlative.png');
     $this->assertEquals($actual, $this->ds->content);
     $this->ds->getContent($temp);
     $this->assertEquals($actual, file_get_contents($temp));
@@ -241,7 +241,7 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testContentXFromUrl() {
-    $url = 'http://hudson.islandora.ca/files/xml.xml';
+    $url = 'http://jenkins.discoverygarden.ca:8080/xml.xml';
     $data = <<<foo
 <woo>
   <test>

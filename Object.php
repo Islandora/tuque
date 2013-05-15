@@ -397,7 +397,9 @@ abstract class AbstractFedoraObject extends AbstractObject {
     switch ($function) {
       case 'get':
         $models = array();
+
         $rels_models = $this->relationships->get(FEDORA_MODEL_URI, 'hasModel');
+
         foreach ($rels_models as $model) {
           $models[] = $model['object']['value'];
         }
@@ -703,7 +705,7 @@ class FedoraObject extends AbstractFedoraObject {
    * Purge a datastream.
    *
    * @param string $id
-   *   The id of hte datastream to purge.
+   *   The id of the datastream to purge.
    *
    * @return boolean
    *   Returns TRUE on success and FALSE on failure.

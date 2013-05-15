@@ -83,4 +83,8 @@ class FedoraRelationshipsInternalTest extends PHPUnit_Framework_TestCase {
     $rels_int = $this->datastream->relationships->get(NULL, 'isViewableByUser');
     $this->assertEquals(0, count($rels_int));
   }
+
+  function testPurge() {
+    $this->assertTrue($this->object->purgeDatastream('RELS-INT'));
+  }
 }

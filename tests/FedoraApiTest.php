@@ -38,6 +38,12 @@ class FedoraApiIngestTest extends PHPUnit_Framework_TestCase {
     }
   }
 
+  public function testUserAttributes() {
+      $attributes = $this->apia->userAttributes();
+      $this->assertArrayHasKey('role', $attributes);
+      $this->assertArrayHasKey('fedoraRole', $attributes);
+  }
+
   public function testDescribeRepository() {
     $describe = $this->apia->describeRepository();
     $this->assertArrayHasKey('repositoryName', $describe);

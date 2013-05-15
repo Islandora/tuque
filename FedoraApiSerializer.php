@@ -154,6 +154,22 @@ class FedoraApiSerializer {
   }
 
   /**
+   * Serializes the data returned in FedoraApiA::userAttributes()
+   */
+  public function userAttributes($request) {
+      $user_attributes = $this->loadSimpleXml($request['content']);
+      $data = Array();
+      foreach($user_attributes->attribute as $attribute){
+          $values = Array();
+          foreach($attribute->value as $value){
+              array_push($values, (string)$value);
+          }
+          $data[(string)$attribute['name']] = $values;
+      }
+      return $data;
+  }
+
+  /**
    * Serializes the data returned in FedoraApiA::findObjects()
    */
   public function findObjects($request) {

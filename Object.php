@@ -553,7 +553,9 @@ class NewFedoraObject extends AbstractFedoraObject {
    */
   public function ingestDatastream(&$ds) {
     if (!isset($this->datastreams[$ds->id])) {
-      if (!($ds instanceof NewFedoraDatastream)) {
+      // The datastream does not already belong to this object, aka was created
+      // by this object.
+      if ($ds->parent != $this) {
         // Create a NewFedoraDatastream copy.
         $this->createNewDatastreamCopy($ds);
       }
@@ -928,4 +930,3 @@ class FedoraObject extends AbstractFedoraObject {
   }
 
 }
-

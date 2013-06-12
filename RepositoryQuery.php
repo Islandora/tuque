@@ -76,21 +76,21 @@ class RepositoryQuery {
    *   The type of query to perform, as used by the risearch interface.
    * @param int $limit
    *   An integer, used to limit the number of results to return.
+   * @param string $format
+   *   A string indicating the type format desired, as supported by the
+   *   underlying triple store.
    *
-   * @return array
-   *   Indexed (numerical) array, containing a number of associative arrays,
-   *   with keys being the same as the variable names in the query.
-   *   URIs beginning with 'info:fedora/' will have this beginning stripped
-   *   off, to facilitate their use as PIDs.
+   * @return string
+   *   The contents returned, in the $format specified.
    */
-  function query($query, $type = 'itql', $limit = -1) {
+  protected function internalQuery($query, $type = 'itql', $limit = -1, $format = 'Sparql') {
     // Construct the query URL.
     $url = '/risearch';
     $seperator = '?';
 
     $this->connection->addParam($url, $seperator, 'type', 'tuples');
     $this->connection->addParam($url, $seperator, 'flush', TRUE);
-    $this->connection->addParam($url, $seperator, 'format', 'Sparql');
+    $this->connection->addParam($url, $seperator, 'format', $format);
     $this->connection->addParam($url, $seperator, 'lang', $type);
     $this->connection->addParam($url, $seperator, 'query', $query);
 
@@ -98,11 +98,31 @@ class RepositoryQuery {
     if ($limit > 0) {
       $this->connection->addParam($url, $seperator, 'limit', $limit);
     }
-    
+
     $result = $this->connection->getRequest($url);
 
+    return $result['content'];
+  }
+
+  /**
+   * Performs the given Resource Index query and return the results.
+   *
+   * @param string $query
+   *   A string containing the RI query to perform.
+   * @param string $type
+   *   The type of query to perform, as used by the risearch interface.
+   * @param int $limit
+   *   An integer, used to limit the number of results to return.
+   *
+   * @return array
+   *   Indexed (numerical) array, containing a number of associative arrays,
+   *   with keys being the same as the variable names in the query.
+   *   URIs beginning with 'info:fedora/' will have this beginning stripped
+   *   off, to facilitate their use as PIDs.
+   */
+  public function query($query, $type = 'itql', $limit = -1) {
     // Pass the query's results off to a decent parser.
-    return self::parseSparqlResults($result['content']);
+    return self::parseSparqlResults($this->internalQuery($query, $type, $limit));
   }
 
   /**
@@ -146,5 +166,22 @@ class RepositoryQuery {
     else {
       return $uri;
     }
+  }
+
+  /**
+   * Get the count of tuples a query selects.
+   *
+   * Given that some langauges do not have a built-in construct for performing
+   * counting/aggregation, a method to help with this is desirable.
+   *
+   * @param string $query
+   *   A query for which to count the number tuples returned.
+   *
+   * @return int
+   *   The number of tuples which were selected.
+   */
+  public function countQuery($query, $type='itql') {
+    $content = $this->internalQuery($query, $type, -1, 'count');
+    return intval($content);
   }
 }

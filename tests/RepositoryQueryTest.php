@@ -21,6 +21,15 @@ class RepositoryQueryTest extends PHPUnit_Framework_TestCase {
     $query = 'select $pid $label from <#ri>
 where $pid <fedora-model:label> $label';
     $results = $this->repository->ri->itqlQuery($query);
-    $this->assertTrue(TRUE);
+    $this->assertTrue(TRUE, 'The query did not throw an exception.');
+  }
+
+  public function testCount() {
+    $query = 'select $pid $label from <#ri>
+where $pid <fedora-model:label> $label';
+    $results = count($this->repository->ri->itqlQuery($query));
+    $number = $this->repository->ri->countQuery($query, 'itql');
+
+    $this->assertEquals($results, $number, 'The number of tuples returned was equal.');
   }
 }

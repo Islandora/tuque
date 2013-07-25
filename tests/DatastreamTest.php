@@ -260,6 +260,10 @@ foo;
     $this->assertEquals(2, count($this->ds));
     $this->assertEquals('', $this->ds[1]->label);
 
+    $this->assertTrue(isset($this->ds[0]));
+    $this->assertTrue(isset($this->ds[1]));
+    $this->assertFalse(isset($this->ds[2]));
+
     $newds = new FedoraDatastream($this->testDsid, $this->object, $this->repository);
     $this->assertEquals(2, count($newds));
     $this->assertEquals('', $newds[1]->label);

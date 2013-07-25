@@ -1687,7 +1687,7 @@ class FedoraDatastream extends AbstractExistingFedoraDatastream implements Count
    */
   public function offsetExists($offset) {
     $this->populateDatastreamHistory();
-    return isset($this->datastreamHistory);
+    return isset($this->datastreamHistory[$offset]);
   }
 
   /**

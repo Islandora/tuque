@@ -640,7 +640,7 @@ class FedoraApiM {
    *   - dsState: one of "A", "I", "D" (*A*ctive, *I*nactive, *D*eleted).
    *   - formatURI: the format URI of the datastream.
    *   - checksumType: the algorithm used to compute the checksum. One of
-   *     DEFAULT, DISABLED, MD5, SHA-1, SHA-256, SHA-385, SHA-512.
+   *     DEFAULT, DISABLED, MD5, SHA-1, SHA-256, SHA-384, SHA-512.
    *   - checksum: the value of the checksum represented as a hexadecimal
    *     string.
    *   - mimeType: the MIME type of the content being added, this overrides the

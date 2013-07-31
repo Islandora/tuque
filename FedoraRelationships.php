@@ -413,18 +413,20 @@ class FedoraRelsExt extends FedoraRelationships {
    * delay this as long as possible, in case it never has be be called.
    */
   protected function initializeDatastream() {
-    if (isset($this->object['RELS-EXT'])) {
-      $ds = $this->object['RELS-EXT'];
-    }
-    else {
-      $ds = $this->object->constructDatastream('RELS-EXT', 'X');
-      $ds->label = 'Fedora Object to Object Relationship Metadata.';
-      $ds->format = 'info:fedora/fedora-system:FedoraRELSExt-1.0';
-      $ds->mimetype = 'application/rdf+xml';
-      $this->new = TRUE;
-    }
+    if ($this->datastream === NULL) {
+      if (isset($this->object['RELS-EXT'])) {
+        $ds = $this->object['RELS-EXT'];
+      }
+      else {
+        $ds = $this->object->constructDatastream('RELS-EXT', 'X');
+        $ds->label = 'Fedora Object to Object Relationship Metadata.';
+        $ds->format = 'info:fedora/fedora-system:FedoraRELSExt-1.0';
+        $ds->mimetype = 'application/rdf+xml';
+        $this->new = TRUE;
+      }
 
-    $this->datastream = $ds;
+      $this->datastream = $ds;
+    }
   }
 
   /**
@@ -557,17 +559,19 @@ class FedoraRelsInt extends FedoraRelationships {
    * Delay initialization by waiting to set datastream with this function.
    */
   protected function initializeDatastream() {
-    if (isset($this->aboutDs->parent['RELS-INT'])) {
-      $ds = $this->aboutDs->parent['RELS-INT'];
+    if ($this->datastream === NULL) {
+      if (isset($this->aboutDs->parent['RELS-INT'])) {
+        $ds = $this->aboutDs->parent['RELS-INT'];
+      }
+      else {
+        $ds = $this->aboutDs->parent->constructDatastream('RELS-INT', 'X');
+        $ds->label = 'Fedora Relationship Metadata.';
+        $ds->format = 'info:fedora/fedora-system:FedoraRELSInt-1.0';
+        $ds->mimetype = 'application/rdf+xml';
+        $this->new = TRUE;
+      }
+      $this->datastream = $ds;
     }
-    else {
-      $ds = $this->aboutDs->parent->constructDatastream('RELS-INT', 'X');
-      $ds->label = 'Fedora Relationship Metadata.';
-      $ds->format = 'info:fedora/fedora-system:FedoraRELSInt-1.0';
-      $ds->mimetype = 'application/rdf+xml';
-      $this->new = TRUE;
-    }
-    $this->datastream = $ds;
   }
 
   /**

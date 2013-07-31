@@ -227,4 +227,17 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
     $this->assertTrue($this->object->ingestDatastream($newds) !== FALSE, 'Datastream ingest succeeded.');
     $this->assertTrue($newds instanceof FedoraDatastream, 'Datastream mutated on ingestion.');
   }
+
+  public function testObjectMutationAfterDatastreamIngestion() {
+    $ds = $this->object->constructDatastream('woot');
+    $this->object->ingestDatastream($ds);
+    $this->object->label = 'foo';
+  }
+
+  public function testObjectMutationAfterDatastreamDeletion() {
+    $ds = $this->object->constructDatastream('woot');
+    $this->object->ingestDatastream($ds);
+    $this->object->purgeDatastream($ds->id);
+    $this->object->label = 'foo';
+  }
 }

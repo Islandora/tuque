@@ -28,4 +28,4 @@ TROUBLESHOOTING
 F.A.Q.
 ------
 
-https://github.com/Islandora/islandora/wiki/Build,-Access,-Modify-and-Delete-Fedora-objects-with-theTuque-interface
+https://github.com/Islandora/islandora/wiki/Build,-Access,-Modify-and-Delete-Fedora-objects-with-the-Tuque-interface

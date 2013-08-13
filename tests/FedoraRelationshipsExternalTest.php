@@ -23,6 +23,10 @@ class FedoraRelationshipsExternalTest extends PHPUnit_Framework_TestCase {
     $this->object->relationships->add(FEDORA_RELS_EXT_URI, 'isMemberOfCollection', 'theawesomecollection:awesome');
     $this->object->relationships->add(FEDORA_MODEL_URI, 'hasModel', 'islandora:woot');
 
+    $this->object->relationships->add(ISLANDORA_RELS_EXT_URI, 'has_mixed_quotes', '\'xpath"escaping"realy_sucks\'', TRUE);
+    $this->object->relationships->add(ISLANDORA_RELS_EXT_URI, 'has_single_quotes', "xpath'escaping'sucks", TRUE);
+    $this->object->relationships->add(ISLANDORA_RELS_EXT_URI, 'has_double_quotes', 'xpath"escaping"sucks_doubly', TRUE);
+
     $this->repository->ingestObject($this->object);
   }
 
@@ -30,9 +34,24 @@ class FedoraRelationshipsExternalTest extends PHPUnit_Framework_TestCase {
     $this->repository->purgeObject($this->object->id);
   }
 
+  /**
+   * Tests that xpaths are escaped for literals.
+   */
+  function testXpathEscaping() {
+
+    $has_mixed_quotes_rels = $this->object->relationships->get(ISLANDORA_RELS_EXT_URI, 'has_mixed_quotes', '\'xpath"escaping"realy_sucks\'', TRUE);
+    $has_single_quotes_rels = $this->object->relationships->get(ISLANDORA_RELS_EXT_URI, 'has_single_quotes', "xpath'escaping'sucks", TRUE);
+    $has_double_quotes_rels = $this->object->relationships->get(ISLANDORA_RELS_EXT_URI, 'has_double_quotes', 'xpath"escaping"sucks_doubly', TRUE);
+
+    $this->assertEquals('\'xpath"escaping"realy_sucks\'', $has_mixed_quotes_rels[0]['object']['value']);
+    $this->assertEquals("xpath'escaping'sucks", $has_single_quotes_rels[0]['object']['value']);
+    $this->assertEquals('xpath"escaping"sucks_doubly', $has_double_quotes_rels[0]['object']['value']);
+
+  }
+
   function testGetAll() {
     $relationships = $this->object->relationships->get();
-    $this->assertEquals(5, count($relationships));
+    $this->assertEquals(8, count($relationships));
     $this->assertEquals('hasAwesomeness', $relationships[0]['predicate']['value']);
     $this->assertEquals('jonathan:green', $relationships[0]['object']['value']);
     $this->assertEquals('hasModel', $relationships[1]['predicate']['value']);

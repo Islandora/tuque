@@ -85,6 +85,30 @@ class FedoraRelationships {
   }
 
   /**
+   * Escapes strings for use in xpaths.
+   *
+   * @see http://stackoverflow.com/questions/4820067
+   *
+   * @param string $input
+   *   The string to escape.
+   *
+   * @return string
+   *   The escaped string.
+   */
+  protected function xpathEscape($input) {
+
+    if (false === strpos($input, "'")) {
+        return "'$input'";
+    }
+
+    if (false === strpos($input, '"')) {
+        return "\"$input\"";
+    }
+
+    return 'concat("' . strtr($input, array('"' => "\", '\"', \"")) . '")';
+  }
+
+  /**
    * Sets up a domdocument for the functions.
    *
    * @return DomDocument
@@ -220,7 +244,7 @@ class FedoraRelationships {
 
     if ($object) {
       if ($literal) {
-        $xpath .= '[.="' . $object . '"]';
+        $xpath .= '[.=' . $this->xpathEscape($object) . ']';
       }
       else {
         $xpath .= '[@rdf:resource="info:fedora/' . $object . '"]';

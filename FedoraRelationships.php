@@ -21,6 +21,7 @@ define("RELS_TYPE_INT", 3);
 define("RELS_INT_NS", "http://www.w3.org/2001/XMLSchema#int");
 define("RELS_TYPE_DATETIME", 4);
 define("RELS_DATETIME_NS", "http://www.w3.org/2001/XMLSchema#dateTime");
+define("RELS_TYPE_FULL_URI", 5);
 
 require_once "RepositoryException.php";
 
@@ -189,11 +190,14 @@ class FedoraRelationships {
 
     $relationship = $document->createElementNS($predicate_uri, $predicate);
     $description->appendChild($relationship);
-    if ($type != RELS_TYPE_URI) {
+    if (!in_array($type, array(RELS_TYPE_URI, RELS_TYPE_FULL_URI))) {
       $relationship->nodeValue = $object;
     }
 
     switch ($type) {
+      case RELS_TYPE_FULL_URI:
+        $relationship->setAttributeNS(RDF_URI, 'rdf:resource', $object);
+        break;
       case RELS_TYPE_URI:
         $relationship->setAttributeNS(RDF_URI, 'rdf:resource', 'info:fedora/' . $object);
         break;
@@ -217,10 +221,14 @@ class FedoraRelationships {
   /**
    * This function is used to create an xpath expression based on the input.
    *
+   * @param int $type
+   *   What the attribute type should be. One of the defined literals beginning
+   *   with RELS_TYPE_.
+   *
    * @return DOMNodeList
    *   The node list
    */
-  protected function getXpathResults($xpath_object, $subject, $predicate_uri, $predicate, $object, $literal) {
+  protected function getXpathResults($xpath_object, $subject, $predicate_uri, $predicate, $object, $type) {
     $xpath = '/rdf:RDF/rdf:Description[@rdf:about="info:fedora/' . $subject . '"]';
 
     // We do this to deal with the lowercase d.
@@ -243,11 +251,14 @@ class FedoraRelationships {
     }
 
     if ($object) {
-      if ($literal) {
-        $xpath .= '[.=' . $this->xpathEscape($object) . ']';
+      if ($type == RELS_TYPE_FULL_URI) {
+        $xpath .= '[@rdf:resource="' . $object . '"]';
+      }
+      elseif ($type == RELS_TYPE_URI) {
+        $xpath .= '[@rdf:resource="info:fedora/' . $object . '"]';
       }
       else {
-        $xpath .= '[@rdf:resource="info:fedora/' . $object . '"]';
+        $xpath .= '[.=' . $this->xpathEscape($object) . ']';
       }
     }
     return $xpath_object->query($xpath);
@@ -268,8 +279,9 @@ class FedoraRelationships {
    *   The predicate tag to filter by.
    * @param string $object
    *   The object for the relationship to filter by.
-   * @param boolean $literal
-   *   Defines if the $object is a literal or not.
+   * @param int $type
+   *   What the attribute type should be. One of the defined literals beginning
+   *   with RELS_TYPE_.
    *
    * @return array
    *   This returns an indexed array with all the matching relationships. The
@@ -297,11 +309,11 @@ class FedoraRelationships {
    *   )
    *   @endcode
    */
-  protected function internalGet($subject, $predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
+  protected function internalGet($subject, $predicate_uri = NULL, $predicate = NULL, $object = NULL, $type = RELS_TYPE_URI) {
     $document = $this->getDom();
     $xpath = $this->getXpath($document);
 
-    $result_elements = $this->getXpathResults($xpath, $subject, $predicate_uri, $predicate, $object, $literal);
+    $result_elements = $this->getXpathResults($xpath, $subject, $predicate_uri, $predicate, $object, $type);
     $results = array();
     foreach ($result_elements as $element) {
       $result = array();
@@ -318,9 +330,11 @@ class FedoraRelationships {
       $object = array();
       if ($element->hasAttributeNS($this->namespaces['rdf'], 'resource')) {
         $attrib = $element->getAttributeNS($this->namespaces['rdf'], 'resource');
-        $attrib = explode('/', $attrib);
-        unset($attrib[0]);
-        $attrib = implode('/', $attrib);
+        $attrib_array = explode('/', $attrib);
+        if ($attrib_array[0] == 'info:fedora') {
+          unset($attrib_array[0]);
+          $attrib = implode('/', $attrib_array);
+        }
         $object['literal'] = FALSE;
         $object['value'] = $attrib;
       }
@@ -517,8 +531,10 @@ class FedoraRelsExt extends FedoraRelationships {
    *   The predicate tag to filter by.
    * @param string $object
    *   The object for the relationship to filter by.
-   * @param boolean $literal
-   *   Defines if the $object is a literal or not.
+   * @param mixed $type
+   *   What the attribute type should be. One of the defined literals beginning
+   *   with RELS_TYPE_.  For backwards compatibility we support TRUE as
+   *   RELS_TYPE_PLAIN_LITERAL and FALSE as RELS_TYPE_URI.
    *
    * @return array
    *   This returns an indexed array with all the matching relationships. The
@@ -546,9 +562,18 @@ class FedoraRelsExt extends FedoraRelationships {
    *   )
    *   @endcode
    */
-  public function get($predicate_uri = NULL, $predicate = NULL, $object = NULL, $literal = FALSE) {
+  public function get($predicate_uri = NULL, $predicate = NULL, $object = NULL, $type = RELS_TYPE_URI) {
     $this->initializeDatastream();
-    return parent::internalGet($this->object->id, $predicate_uri, $predicate, $object, $literal);
+
+    // This method once accepted only booleans.
+    if ($type === TRUE) {
+      $type = RELS_TYPE_PLAIN_LITERAL;
+    }
+    elseif ($type == FALSE) {
+      $type = RELS_TYPE_URI;
+    }
+
+    return parent::internalGet($this->object->id, $predicate_uri, $predicate, $object, $type);
   }
 
   public function changeObjectID($id) {
@@ -662,8 +687,9 @@ class FedoraRelsInt extends FedoraRelationships {
    *   The predicate tag to filter by.
    * @param string $object
    *   The object for the relationship to filter by.
-   * @param string $type
-   *   Specifies if the object is a literal or if not, what the atttribute type should be..
+   * @param int $type
+   *   What the attribute type should be. One of the defined literals beginning
+   *   with RELS_TYPE_.
    *
    * @return array
    *   This returns an indexed array with all the matching relationships. The

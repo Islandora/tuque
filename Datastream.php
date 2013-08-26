@@ -1082,8 +1082,20 @@ class FedoraDatastreamVersion extends AbstractExistingFedoraDatastream {
   /**
    * @see AbstractDatastream::checksum
    */
-  protected function checksumMagicProperty() {
+  protected function checksumMagicProperty($function, $value) {
     return $this->generalReadOnly('dsChecksum', 'none', $function, $value);
+  }
+
+  /**
+   * @see AbstractDatastream::url
+   */
+  protected function urlMagicProperty($function, $value) {
+    if (in_array($this->controlGroup, array('R', 'E'))) {
+      return $this->generalReadOnly('dsLocation', FALSE, $function, $value);
+    }
+    else {
+      trigger_error("No 'url' property on datastreams in control group {$this->controlGroup}", E_USER_WARNING);
+    }
   }
 
   /**

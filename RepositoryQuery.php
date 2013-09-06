@@ -126,25 +126,29 @@ class RepositoryQuery {
   }
 
   /**
-   * Thin wrapper for self::_performRiQuery().
+   * Thin wrapper for self::query().
    *
-   * @see self::performRiQuery()
+   * @see self::query()
    */
   public function itqlQuery($query, $limit = -1) {
     return $this->query($query, 'itql', $limit);
   }
 
   /**
-   * Thin wrapper for self::performRiQuery().
+   * Thin wrapper for self::query().
    *
-   * @see self::_performRiQuery()
+   * This function once took a 3rd parameter for an offset that did not work.
+   * It has been eliminated.  If you wish to use an offset include it in the
+   * query.
+   *
+   * @see self::query()
    */
-  public function sparqlQuery($query, $limit = -1, $offset = 0) {
-    return $this->query($query, 'sparql', $limit, $offset);
+  public function sparqlQuery($query, $limit = -1) {
+    return $this->query($query, 'sparql', $limit);
   }
 
   /**
-   * Utility function used in self::performRiQuery().
+   * Utility function used in self::query().
    *
    * Strips off the 'info:fedora/' prefix from the passed in string.
    *

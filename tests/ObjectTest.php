@@ -61,6 +61,9 @@ class ObjectTest extends PHPUnit_Framework_TestCase {
 
     $this->object->label = 'aboot';
     $this->assertEquals('aboot', $this->object->label);
+
+    $this->object->label = FedoraTestHelpers::randomString(355);
+    $this->assertEquals(255, strlen($this->object->label));
   }
 
   public function testObjectLabelSerialization() {

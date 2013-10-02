@@ -64,6 +64,8 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('woot', $this->ds->label);
     $this->ds->label = 'aboot';
     $this->assertEquals('aboot', $this->ds->label);
+    $this->ds->label = FedoraTestHelpers::randomString(355);
+    $this->assertEquals(255, strlen($this->ds->label));
   }
 
   public function testFormat() {

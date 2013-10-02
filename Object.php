@@ -39,7 +39,8 @@ require_once 'FedoraRelationships.php';
 abstract class AbstractObject extends MagicProperty implements Countable, ArrayAccess, IteratorAggregate {
 
   /**
-   * The label for this object.
+   * The label for this object. Fedora limits the label to be 255 characters.
+   * Anything after this amount is truncated.
    *
    * @var string
    */
@@ -325,7 +326,7 @@ abstract class AbstractFedoraObject extends AbstractObject {
         break;
 
       case 'set':
-        $this->objectProfile['objLabel'] = $value;
+        $this->objectProfile['objLabel'] = function_exists('mb_substr') ? mb_substr($value, 0, 255) : substr($value, 0, 255);
         break;
 
       case 'unset':
@@ -753,7 +754,7 @@ class FedoraObject extends AbstractFedoraObject {
    */
   protected function labelMagicPropertySet($value) {
     if ($this->objectProfile['objLabel'] != $value) {
-      $this->modifyObject(array('label' => $value));
+      $this->modifyObject(array('label' => function_exists('mb_substr') ? mb_substr($value, 0, 255) : substr($value, 0, 255)));
       parent::labelMagicProperty('set', $value);
     }
   }

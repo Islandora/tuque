@@ -154,6 +154,10 @@ class DatastreamTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testChecksum() {
+    if(defined('TRAVIS') && TRAVIS == TRUE) {
+      $this->markTestSkipped('Travis cannot run this test as it takes too long.');
+    }
+
     foreach (array('MD5', 'SHA-1', 'SHA-256', 'SHA-384', 'SHA-512') as $algorithm) {
       $this->ds->checksumType = $algorithm;
       $this->assertTrue(isset($this->ds->checksum));

@@ -3,5 +3,6 @@
     <const name="FEDORAURL" value="http://localhost:8080/fedora"/>
     <const name="FEDORAUSER" value="fedoraAdmin"/>
     <const name="FEDORAPASS" value="fedoraAdmin"/>
+    <const name="TRAVIS" value="TRUE"/>
   </php>
 </phpunit>

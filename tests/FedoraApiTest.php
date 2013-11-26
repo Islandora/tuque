@@ -884,6 +884,10 @@ class FedoraApiFindObjectsTest extends PHPUnit_Framework_TestCase {
    * @depends testGetDatastream
    */
   function testModifyDatastreamChecksum() {
+    if(defined('TRAVIS') && TRAVIS == TRUE) {
+      $this->markTestSkipped('Travis cannot run this test as it takes too long.');
+    }
+
     foreach ($this->fixtures as $pid => $fixture) {
       foreach($fixture['dsids'] as $dsid => $data) {
         foreach(array('MD5', 'SHA-1', 'SHA-256', 'SHA-384', 'SHA-512', 'DISABLED') as $type) {

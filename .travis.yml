@@ -16,4 +16,4 @@ before_script:
   - cd ..
   - sleep 10
 script:
-  - phpunit -c tests/travis.xml tests/
+  - phpunit --debug -c tests/travis.xml tests/

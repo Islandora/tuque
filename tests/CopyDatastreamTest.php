@@ -11,6 +11,7 @@ require_once 'TestHelpers.php';
 class CopyDatastreamTest extends PHPUnit_Framework_TestCase {
 
   protected function setUp() {
+    $this->markTestSkipped();
     $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS);
     $this->api = new FedoraApi($connection);
     $cache = new SimpleCache();

@@ -1,9 +1,16 @@
-<phpunit>
+<phpunit bootstrap="bootstrap.php">
   <php>
+    <!-- Need to define an array ofr all the repositories to test against? -->
     <const name="FEDORAURL" value="http://localhost:8080/fedora"/>
     <const name="FEDORAUSER" value="fedoraAdmin"/>
-    <const name="FEDORAPASS" value="wei9bo0eethooD"/>
+    <const name="FEDORAPASS" value="fedoraAdmin"/>
+    <const name="FEDORAVERSION" value="3.6.2"/>
   </php>
+  <testsuites>
+    <testsuite name="Fedora3">
+      <directory suffix="Test.php" phpVersion="5.3.0" phpVersionOperator=">=">implementations/fedora3</directory>
+    </testsuite>
+  </testsuites>
   <logging>
     <log type="coverage-html" target="../build/coverage" title="Tuque"
          charset="UTF-8" yui="true" highlight="true"

@@ -1,7 +1,17 @@
-<phpunit>
+<phpunit bootstrap="bootstrap.php">
   <php>
     <const name="FEDORAURL" value="http://localhost:8080/fedora"/>
     <const name="FEDORAUSER" value="fedoraAdmin"/>
     <const name="FEDORAPASS" value="fedoraAdmin"/>
+    <!-- FEDORAVERSION is defined in bootstrap.php
+    <const name="FEDORAVERSION" value="3.6.2"/> -->
   </php>
+  <testsuites>
+    <testsuite name="Fedora-3.6.2">
+      <directory suffix="Test.php" phpVersion="5.3.0" phpVersionOperator=">=">implementations/fedora3</directory>
+    </testsuite>
+    <testsuite name="Fedora-3.7.0">
+      <directory suffix="Test.php" phpVersion="5.3.0" phpVersionOperator=">=">implementations/fedora3</directory>
+    </testsuite>
+  </testsuites>
 </phpunit>

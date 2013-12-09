@@ -447,11 +447,23 @@ class CurlConnection extends HttpConnection {
         break;
 
       case 'file':
-        if ($content_type) {
-          curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data;type=$content_type"));
+        if (version_compare(phpversion(), '5.5.0', '>=')) {
+          if ($content_type) {
+            $cfile = new CURLFile($data, $content_type, $data);
+            curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => $cfile));
+          }
+          else {
+            $cfile = new CURLFile($data);
+            curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => $cfile));
+          }
         }
         else {
-          curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data"));
+          if ($content_type) {
+            curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data;type=$content_type"));
+          }
+          else {
+            curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data"));
+          }
         }
         break;
 
@@ -507,11 +519,23 @@ class CurlConnection extends HttpConnection {
         break;
 
       case 'file':
-        if ($content_type) {
-          curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data;type=$content_type"));
+        if (version_compare(phpversion(), '5.5.0', '>=')) {
+          if ($content_type) {
+            $cfile = new CURLFile($data, $content_type, $data);
+            curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => $cfile));
+          }
+          else {
+            $cfile = new CURLFile($data);
+            curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => $cfile));
+          }
         }
         else {
-          curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data"));
+          if ($content_type) {
+            curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data;type=$content_type"));
+          }
+          else {
+            curl_setopt(self::$curlContext, CURLOPT_POSTFIELDS, array('file' => "@$data"));
+          }
         }
         break;
 

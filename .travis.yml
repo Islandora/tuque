@@ -25,6 +25,6 @@ before_script:
   - cd ..
   - sleep 10
 script:
-  - phpunit -c tests/travis.xml tests/
+  - /usr/local/bin/phpunit -c tests/travis.xml tests/
 notifications:
   irc: "irc.freenode.org#islandora"

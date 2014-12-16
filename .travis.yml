@@ -8,6 +8,11 @@ env:
   - FEDORA_VERSION="3.7.0"
 # broken right now, should be fixed.
 #  - FEDORA_VERSION="3.5"
+#issues with failing tests on specific phpunit versions. Forcing version
+before_install:
+  - wget http://alpha.library.yorku.ca/phpunit.phar
+  - sudo mv phpunit.phar /usr/local/bin/phpunit
+  - sudo chmod +x /usr/local/bin/phpunit
 before_script:
   - mysql -u root -e "create database fedora;"
   - mysql -u root -e "GRANT ALL PRIVILEGES ON fedora.* To 'fedora'@'localhost' IDENTIFIED BY 'fedora';"

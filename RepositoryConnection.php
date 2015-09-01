@@ -94,7 +94,8 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
   /**
    * This function adds a specific parameter to a RESTful request. It makes
    * sure that PHP booleans are changes into true and false and that the
-   * parameters are properly URL encoded.
+   * parameters's special space characters are replaced/trimmed and properly
+   * URL encoded.
    *
    * @param string $request
    *   The request that is being built.
@@ -112,6 +113,7 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
         $parameter = $value ? 'true' : 'false';
       }
       else {
+        $value = trim(preg_replace('/[\x00-\x20]+/', ' ', $value));
         $parameter = urlencode($value);
       }
       $request .= "{$seperator}{$name}={$parameter}";

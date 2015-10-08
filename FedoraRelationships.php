@@ -16,7 +16,7 @@ define("INIT_DS_LABEL", "Fedora Object to Object Relationship Metadata.");
 define("INIT_FEDORA_DS_LABEL", "Fedora Relationship Metadata.");
 define("INIT_DS_MIME", "application/rdf+xml");
 
-define("INIT_DS_CONTROL_GROUP", "X");
+define("INIT_DS_CONTROL_GROUP", "M");
 
 define("RDF_URI", 'http://www.w3.org/1999/02/22-rdf-syntax-ns#');
 

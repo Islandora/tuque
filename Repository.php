@@ -28,13 +28,13 @@ abstract class AbstractRepository extends MagicProperty {
    *     the form NAMESPACE:IDENTIFIER
    * @param boolean $create_uuid
    *   Indicates if the objects ID should contain a UUID.
-   *
+   *   NULL or FALSE if not, defaults to NULL.
    * @return AbstractObject
    *   Returns an instantiated AbstractObject object that can be manipulated.
    *   This object will not actually be created in the repository until the
    *   ingest method is called.
    */
-  abstract public function constructObject($id = NULL, $create_uuid = FALSE);
+  abstract public function constructObject($id = NULL, $create_uuid = NULL);
 
   /**
    * This ingests a new object into the repository.
@@ -96,6 +96,7 @@ abstract class AbstractRepository extends MagicProperty {
    *   string the namespace to be used for the identifier.
    * @param boolean $create_uuid
    *   True if a V4 UUID should be used as part of the identifier.
+   *   NULL or FALSE if not, defaults to NULL.
    * @param integer $number_of_identifiers
    *   The number of identifers to return
    *   Defaults to 1.
@@ -111,7 +112,7 @@ abstract class AbstractRepository extends MagicProperty {
    *         )
    *     @endcode
    */
-  abstract public function getNextIdentifier($namespace = NULL, $create_uuid = FALSE, $number_of_identifiers = 1);
+  abstract public function getNextIdentifier($namespace = NULL, $create_uuid = NULL, $number_of_identifiers = 1);
 
 }
 
@@ -171,7 +172,7 @@ class FedoraRepository extends AbstractRepository {
   /**
    * @see AbstractRepository::constructObject
    */
-  public function constructObject($id = NULL, $create_uuid = FALSE) {
+  public function constructObject($id = NULL, $create_uuid = NULL) {
     $exploded_id = explode(':', $id);
     // If no namespace or PID provided.
     if (!$id) {
@@ -191,7 +192,7 @@ class FedoraRepository extends AbstractRepository {
    *
    *  @see AbstractRepository::getNextIdentifier
    */
-  public function getNextIdentifier($namespace = NULL, $create_uuid = FALSE, $number_of_identifiers = 1) {
+  public function getNextIdentifier($namespace = NULL, $create_uuid = NULL, $number_of_identifiers = 1) {
     $pids = array();
 
     if ($create_uuid) {

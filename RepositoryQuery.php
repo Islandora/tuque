@@ -7,7 +7,7 @@
  * Islandora 6.x, so I'd like to give him some credit here.
  */
 
-class RepositoryQuery {
+class RepositoryQuery extends CurlConnection {
 
   public $connection;
   const SIMPLE_XML_NAMESPACE = "http://www.w3.org/2001/sw/DataAccess/rf1/result";
@@ -91,24 +91,40 @@ class RepositoryQuery {
    *   The contents returned, in the $format specified.
    */
   protected function internalQuery($query, $type = 'itql', $limit = -1, $format = 'Sparql') {
-    // Construct the query URL.
-    $url = '/risearch';
-    $seperator = '?';
 
-    $this->connection->addParam($url, $seperator, 'type', 'tuples');
-    $this->connection->addParam($url, $seperator, 'flush', TRUE);
-    $this->connection->addParam($url, $seperator, 'format', $format);
-    $this->connection->addParam($url, $seperator, 'lang', $type);
-    $this->connection->addParam($url, $seperator, 'query', $query);
+    if ($this->connection->$url == $this->connection->$sparqlEndpoint) {
+    	  // We are using the included triplestore
+      // Construct the query URL.
+      $url = '/risearch';
+      $seperator = '?';
 
-    // Add limit if provided.
-    if ($limit > 0) {
-      $this->connection->addParam($url, $seperator, 'limit', $limit);
+      $this->connection->addParam($url, $seperator, 'type', 'tuples');
+      $this->connection->addParam($url, $seperator, 'flush', TRUE);
+      $this->connection->addParam($url, $seperator, 'format', $format);
+      $this->connection->addParam($url, $seperator, 'lang', $type);
+      $this->connection->addParam($url, $seperator, 'query', $query);
+
+      // Add limit if provided.
+      if ($limit > 0) {
+        $this->connection->addParam($url, $seperator, 'limit', $limit);
+      }
+
+      $result = $this->connection->getRequest($url);
+
+      return $result['content'];
     }
-
-    $result = $this->connection->getRequest($url);
-
-    return $result['content'];
+    else {
+    	  // We are using an external triplestore
+    	  if (strtolower($type) != "sparql" || strtolower($format) != "sparql") {
+    	  	throw new RepositoryException("External triplestores only understand SPARQL!");
+    	  }
+    	  // Add limit if provided.
+      if ($limit > 0) {
+        $query = $query + "\n" + "LIMIT " + $limit;
+      }
+      return parent::postRequest($this->connection->sparqlEndpoint, "string", $query,
+      			"application/sparql-query");  
+    }
   }
 
   /**

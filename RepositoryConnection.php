@@ -15,7 +15,7 @@ interface RepositoryConfigInterface {
   /**
    * Simple constructor defintion for the repository
    */
-  function __construct($url, $username, $password);
+  function __construct($url, $username, $password, $sparqlEndpoint);
 }
 
 /**
@@ -33,6 +33,7 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
   public $url;
   public $username;
   public $password;
+  public $sparqlEndpoint;
 
   const FEDORA_URL = "http://localhost:8080/fedora";
 
@@ -46,12 +47,18 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
    * @param string $password
    *   The password to connect with.
    */
-  function __construct($url = self::FEDORA_URL, $username = NULL, $password = NULL) {
+  function __construct($url = self::FEDORA_URL, $username = NULL, $password = NULL, $sparqlEndpoint = "DUMMY") {
     // Make sure the url doesn't have a trailing slash.
     $this->url = rtrim($url, "/");
     $this->username = $username;
     $this->password = $password;
-
+    if ($sparqlEndpoint == "DUMMY") {
+    	  // no external endpoint was provided, use the default in-repo triplestore
+      $this->sparqlEndpoint = $this->url;
+    } else {
+    	  $this->sparqlEndpoint = $sparqlEndpoint;
+    }
+    
     try {
       parent::__construct();
     }

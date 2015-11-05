@@ -19,6 +19,7 @@ class RepositoryQuery extends CurlConnection {
    *   The connection to connect to the RI with.
    */
   public function __construct(RepositoryConnection $connection) {
+  	parent::__construct();
     $this->connection = $connection;
   }
 

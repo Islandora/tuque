@@ -92,7 +92,7 @@ class RepositoryQuery extends CurlConnection {
    */
   protected function internalQuery($query, $type = 'itql', $limit = -1, $format = 'Sparql') {
 
-    if ($this->connection->$url == $this->connection->$sparqlEndpoint) {
+    if ($this->connection->url == $this->connection->sparqlEndpoint) {
     	  // We are using the included triplestore
       // Construct the query URL.
       $url = '/risearch';

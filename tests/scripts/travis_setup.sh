@@ -25,4 +25,5 @@ fi
 
 ./bin/startup.sh
 cd ..
+sleep 10
 curl http://localhost:8080/fedora > /dev/null

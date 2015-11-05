@@ -22,6 +22,11 @@ class RepositoryQuery extends CurlConnection {
   	parent::__construct();
     $this->connection = $connection;
   }
+  
+  public function __sleep() {
+  	parent::saveCookiesToSession();
+  	return array('connection');
+  }
 
   /**
    * Parse the passed in Sparql XML string into a more easily usable format.

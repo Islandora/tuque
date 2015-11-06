@@ -5,7 +5,7 @@ php:
   - "5.5"
 env:
   global:
-    - SPARQL_ENDPOINT=http://localhost:3030
+    - SPARQL_ENDPOINT=http://localhost:3030/RI/query
   matrix:
     - FEDORA_VERSION="3.6.2"
     - FEDORA_VERSION="3.7.0"

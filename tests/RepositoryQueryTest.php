@@ -34,7 +34,8 @@ where $pid <fedora-model:label> $label';
   }
   
   public function testExternalizedQueryEndpoint() {
-  	$query = 'select $pid $label where $pid <fedora-model:label> $label';
+  	$query = 'PREFIX fedora-model: <info:fedora/fedora-system:def/model#>
+  			  SELECT ?pid ?label WHERE { ?pid <fedora-model:label> ?label . } ';
 
   	$sparqlEndpoint = getenv('SPARQL_ENDPOINT');
   	$connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS, $sparqlEndpoint);

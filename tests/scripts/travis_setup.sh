@@ -26,8 +26,7 @@ fi
 ./bin/startup.sh
 cd ..
 fedoraIsUp=1
-until [ $fedoraIsUp -eq "0"]
-do
+until [ $fedoraIsUp -eq "0" ]; do
   echo "Waiting for Fedora to boot..."
   sleep 10
   (curl http://localhost:8080/fedora)

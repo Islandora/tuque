@@ -4,9 +4,12 @@ php:
   - "5.4"
   - "5.5"
 env:
-  - FEDORA_VERSION="3.6.2"
-  - FEDORA_VERSION="3.7.0"
-  - FEDORA_VERSION="3.8.1"
+  global:
+    - SPARQL_ENDPOINT=http://localhost:3030
+  matrix:
+    - FEDORA_VERSION="3.6.2"
+    - FEDORA_VERSION="3.7.0"
+    - FEDORA_VERSION="3.8.1"
 # broken right now, should be fixed
 #  - FEDORA_VERSION="3.5"
 before_script:

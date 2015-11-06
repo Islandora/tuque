@@ -121,15 +121,15 @@ class RepositoryQuery extends CurlConnection {
     }
     else {
     	  // We are using an external triplestore
-    	  if (strtolower($type) != "sparql" || strtolower($format) != "sparql") {
-    	  	throw new RepositoryException("External triplestores only understand SPARQL!");
+    	  if (strtolower($type) != 'sparql' || strtolower($format) != 'sparql') {
+    	  	throw new RepositoryException('External triplestores only understand SPARQL!');
     	  }
     	  // Add limit if provided.
       if ($limit > 0) {
-        $query = $query + "\n" + "LIMIT " + $limit;
+        $query .= "\n" . "LIMIT " . $limit;
       }
-      return parent::postRequest($this->connection->sparqlEndpoint, "string", $query,
-      			"application/sparql-query");  
+      return parent::postRequest($this->connection->sparqlEndpoint, 'string', $query,
+      			'application/sparql-query');  
     }
   }
 

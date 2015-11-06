@@ -1,13 +1,11 @@
 #!/bin/bash
 
-# Java 8, if needed.
-if [ $FEDORA_VERSION = "3.8.1" ]; then
-  sudo add-apt-repository -y ppa:webupd8team/java
-  sudo apt-get update
-  sudo apt-get install -y oracle-java8-installer oracle-java8-set-default
-  sudo update-java-alternatives -s java-8-oracle
-  export JAVA_HOME=/usr/lib/jvm/java-8-oracle
-fi
+# Java 8
+sudo add-apt-repository -y ppa:webupd8team/java
+sudo apt-get update
+sudo apt-get install -y oracle-java8-installer oracle-java8-set-default
+sudo update-java-alternatives -s java-8-oracle
+export JAVA_HOME=/usr/lib/jvm/java-8-oracle
 
 mysql -u root -e "create database fedora;"
 mysql -u root -e "GRANT ALL PRIVILEGES ON fedora.* To 'fedora'@'localhost' IDENTIFIED BY 'fedora';"
@@ -25,6 +23,14 @@ fi
 
 ./bin/startup.sh
 cd ..
+
+# Start Fuseki for testing externalized Resource Index
+wget http://mirror.cc.columbia.edu/pub/software/apache/jena/binaries/apache-jena-fuseki-2.3.0.tar.gz
+tar xvf apache-jena-fuseki-2.3.0.tar.gz
+cd apache-jena-fuseki-2.3.0
+./fuseki-server --mem --update /RI
+
+# wait for Fedora to come up
 fedoraIsUp=1
 until [ $fedoraIsUp -eq "0" ]; do
   echo "Waiting for Fedora to boot..."
@@ -32,4 +38,5 @@ until [ $fedoraIsUp -eq "0" ]; do
   (curl http://localhost:8080/fedora)
   fedoraIsUp=$?
 done
+
 

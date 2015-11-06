@@ -15,4 +15,4 @@ script:
   - phpunit -c tests/travis.xml tests/
 notifications:
   irc: "irc.freenode.org#islandora"
-jdk: oraclejdk8
+sudo: required

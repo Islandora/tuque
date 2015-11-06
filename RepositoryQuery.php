@@ -7,7 +7,7 @@
  * Islandora 6.x, so I'd like to give him some credit here.
  */
 
-class RepositoryQuery extends CurlConnection {
+class RepositoryQuery {
 
   public $connection;
   const SIMPLE_XML_NAMESPACE = "http://www.w3.org/2001/sw/DataAccess/rf1/result";
@@ -19,13 +19,7 @@ class RepositoryQuery extends CurlConnection {
    *   The connection to connect to the RI with.
    */
   public function __construct(RepositoryConnection $connection) {
-  	parent::__construct();
     $this->connection = $connection;
-  }
-  
-  public function __sleep() {
-  	parent::saveCookiesToSession();
-  	return array('connection');
   }
 
   /**
@@ -128,8 +122,9 @@ class RepositoryQuery extends CurlConnection {
       if ($limit > 0) {
         $query .= "\n" . "LIMIT " . $limit;
       }
-      return parent::postRequest($this->connection->sparqlEndpoint, 'string', $query,
-      			'application/sparql-query');  
+      $result = $this->connection->postRequest($this->connection->sparqlEndpoint, 'string',
+        		$query, 'application/sparql-query'); 
+      return $result['content'];
     }
   }
 

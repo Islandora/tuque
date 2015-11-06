@@ -25,5 +25,10 @@ fi
 
 ./bin/startup.sh
 cd ..
-sleep 10
-curl http://localhost:8080/fedora > /dev/null
+while [$fedoraIsNotUp]
+do
+  sleep 4
+  frontPage=$(curl http://localhost:8080/fedora > /dev/null)
+  fedoraIsNotUp = $?
+done
+

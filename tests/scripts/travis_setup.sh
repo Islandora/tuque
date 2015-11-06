@@ -25,10 +25,11 @@ fi
 
 ./bin/startup.sh
 cd ..
-while [ $fedoraIsNotUp ]
+fedoraIsUp=1
+until [ $fedoraIsUp ]
 do
   sleep 10
   (curl http://localhost:8080/fedora)
-  fedoraIsNotUp=$?
+  $fedoraIsUp=$?
 done
 

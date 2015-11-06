@@ -28,7 +28,7 @@ cd ..
 wget http://mirror.cc.columbia.edu/pub/software/apache/jena/binaries/apache-jena-fuseki-2.3.0.tar.gz
 tar xvf apache-jena-fuseki-2.3.0.tar.gz
 cd apache-jena-fuseki-2.3.0
-./fuseki-server --mem --update /RI
+./fuseki-server --mem --update /RI &
 
 # wait for Fedora to come up
 fedoraIsUp=1

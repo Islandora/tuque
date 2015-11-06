@@ -30,6 +30,6 @@ until [ $fedoraIsUp -eq "0" ]; do
   echo "Waiting for Fedora to boot..."
   sleep 10
   (curl http://localhost:8080/fedora)
-  $fedoraIsUp=$?
+  fedoraIsUp=$?
 done
 

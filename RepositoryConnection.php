@@ -46,6 +46,8 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
    *   The username to connect with.
    * @param string $password
    *   The password to connect with.
+   * @param string $sparqlEndpoint
+   *   The URL of a SPARQL Query Endpoint, defaults to $url.
    */
   function __construct($url = self::FEDORA_URL, $username = NULL, $password = NULL, $sparqlEndpoint = "DUMMY") {
     // Make sure the url doesn't have a trailing slash.

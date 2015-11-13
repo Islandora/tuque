@@ -49,17 +49,12 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
    * @param string $sparqlEndpoint
    *   The URL of a SPARQL Query Endpoint, defaults to $url.
    */
-  function __construct($url = self::FEDORA_URL, $username = NULL, $password = NULL, $sparqlEndpoint = "DUMMY") {
+  function __construct($url = self::FEDORA_URL, $username = NULL, $password = NULL, $sparqlEndpoint = NULL) {
     // Make sure the url doesn't have a trailing slash.
     $this->url = rtrim($url, "/");
     $this->username = $username;
     $this->password = $password;
-    if ($sparqlEndpoint == "DUMMY") {
-    	  // no external endpoint was provided, use the default in-repo triplestore
-      $this->sparqlEndpoint = $this->url;
-    } else {
-    	  $this->sparqlEndpoint = $sparqlEndpoint;
-    }
+    $this->sparqlEndpoint = is_null($sparqlEndpoint) ? $this->url : $sparqlEndpoint;
     
     try {
       parent::__construct();

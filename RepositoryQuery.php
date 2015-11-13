@@ -92,8 +92,8 @@ class RepositoryQuery {
    */
   protected function internalQuery($query, $type = 'itql', $limit = -1, $format = 'Sparql') {
 
-    if ($this->connection->url == $this->connection->sparqlEndpoint) {
-    	  // We are using the included triplestore
+    if ($this->connection->url == $this->connection->sparql_endpoint) {
+      // We are using the included triplestore.
       // Construct the query URL.
       $url = '/risearch';
       $seperator = '?';
@@ -114,16 +114,16 @@ class RepositoryQuery {
       return $result['content'];
     }
     else {
-    	  // We are using an external triplestore
-    	  if (strtolower($type) != 'sparql' || strtolower($format) != 'sparql') {
-    	  	throw new RepositoryException('External triplestores only understand SPARQL!');
-    	  }
-    	  // Add limit if provided.
+      // We are using an external triplestore.
+      if (strtolower($type) != 'sparql' || strtolower($format) != 'sparql') {
+        throw new RepositoryException('External triplestores only understand SPARQL!');
+      }
+      // Add limit if provided.
       if ($limit > 0) {
         $query .= "\n LIMIT $limit";
       }
-      $result = $this->connection->postRequest($this->connection->sparqlEndpoint, 'string',
-        		$query, 'application/sparql-query'); 
+      $result = $this->connection->postRequest($this->connection->sparql_endpoint, 'string',
+        $query, 'application/sparql-query');
       return $result['content'];
     }
   }

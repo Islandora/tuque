@@ -15,7 +15,7 @@ interface RepositoryConfigInterface {
   /**
    * Simple constructor defintion for the repository
    */
-  function __construct($url, $username, $password, $sparqlEndpoint);
+  function __construct($url, $username, $password, $sparql_endpoint);
 }
 
 /**
@@ -46,16 +46,16 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
    *   The username to connect with.
    * @param string $password
    *   The password to connect with.
-   * @param string $sparqlEndpoint
+   * @param string $sparql_endpoint
    *   The URL of a SPARQL Query Endpoint, defaults to $url.
    */
-  function __construct($url = self::FEDORA_URL, $username = NULL, $password = NULL, $sparqlEndpoint = NULL) {
+  function __construct($url = self::FEDORA_URL, $username = NULL, $password = NULL, $sparql_endpoint = NULL) {
     // Make sure the url doesn't have a trailing slash.
     $this->url = rtrim($url, "/");
     $this->username = $username;
     $this->password = $password;
-    $this->sparqlEndpoint = is_null($sparqlEndpoint) ? $this->url : $sparqlEndpoint;
-    
+    $this->sparqlEndpoint = is_null($sparql_endpoint) ? $this->url : $sparql_endpoint;
+
     try {
       parent::__construct();
     }

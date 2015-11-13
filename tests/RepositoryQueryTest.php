@@ -32,18 +32,20 @@ where $pid <fedora-model:label> $label';
 
     $this->assertEquals($results, $number, 'The number of tuples returned was equal.');
   }
-  
+
+  /**
+   * Test the use of an externalized SPARQL Query endpoint.
+   */
   public function testExternalizedQueryEndpoint() {
-  	$query = 'PREFIX fedora-model: <info:fedora/fedora-system:def/model#>
+    $query = 'PREFIX fedora-model: <info:fedora/fedora-system:def/model#>
   			  SELECT ?pid ?label WHERE { ?pid <fedora-model:label> ?label . } ';
 
-  	$sparqlEndpoint = getenv('SPARQL_ENDPOINT');
-  	$connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS, $sparqlEndpoint);
-  	$api = new FedoraApi($connection);
-  	$cache = new SimpleCache();
-  	$repository = new FedoraRepository($api, $cache);
-  	$results = $this->repository->ri->sparqlQuery($query);
-  	$this->assertTrue(TRUE, 'The query did not throw an exception.');
-  	
+    $sparql_endpoint = getenv('SPARQL_ENDPOINT');
+    $connection = new RepositoryConnection(FEDORAURL, FEDORAUSER, FEDORAPASS, $sparql_endpoint);
+    $api = new FedoraApi($connection);
+    $cache = new SimpleCache();
+    $repository = new FedoraRepository($api, $cache);
+    $results = $this->repository->ri->sparqlQuery($query);
+    $this->assertTrue(TRUE, 'The query did not throw an exception.');
   }
 }

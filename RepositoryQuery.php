@@ -120,7 +120,7 @@ class RepositoryQuery {
     	  }
     	  // Add limit if provided.
       if ($limit > 0) {
-        $query .= "\n" . "LIMIT " . $limit;
+        $query .= "\n LIMIT $limit";
       }
       $result = $this->connection->postRequest($this->connection->sparqlEndpoint, 'string',
         		$query, 'application/sparql-query'); 

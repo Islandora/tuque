@@ -15,6 +15,22 @@ Tuque is expected to be in one of two paths:
  * sites/all/libraries/tuque (libraries directory may need to be created)
  * islandora_folder/libraries/tuque
 
+## Configuration
+
+There is a configuration option that if set in the ini will override the control group of the RELS-EXT and RELS-INT datastreams. We default these control groups to X if the setting is not present.
+Setting this to M can increase the stability and performance of Fedora.
+
+```
+[Tuque]
+tuque.rels_ds_control_group = M
+```
+
+USE AT YOUR OWN RISK!
+
+There are [issues](https://jira.duraspace.org/browse/FCREPO-849) that are inconsistent across Fedora versions and not fully explored with making the relation datastreams managed.
+
+Tests with the Islandora UI and Fedora 3.6.2 have not shown issues.
+
 ## Documentation
 
 Further documentation for this module is available at [our wiki](https://wiki.duraspace.org/display/ISLANDORA/APPENDIX+G+-+All+About+Tuque).

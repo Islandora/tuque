@@ -311,6 +311,46 @@ class CurlConnection extends HttpConnection {
   }
 
   /**
+   * Returns the file size (in bytes) as a string (for 32-bit PHP).
+   *
+   * 32-bit PHP can't handle file sizes larger than 2147483647 bytes (2.15GB),
+   * since that's the PHP_INT_MAX. In order to compensate, this function
+   * uses exec() to retrieve the file size from the operating system and return
+   * it as a string. Note that converting the value back into an integer
+   * will reintroduce the same max-integer problems.
+   *
+   * Based on the function sizeExec() from https://github.com/jkuchar/BigFileTools
+   *
+   * @return string | bool (FALSE upon failure or when exec() is disabled)
+   */
+  protected function filesize_php32bit($file) {
+    $disabled_functions = explode(',', ini_get('disable_functions'));
+
+    // Ensure PHP is capable of executing an external program.
+    if ((function_exists("exec")) || (!in_array('exec', $disabled_functions))) {
+
+      $file = drupal_realpath($file);
+      $escaped_path = escapeshellarg($file);
+
+      if ($this->isWindows()) {
+        // Use a Windows command to find the file size.
+        $size = trim(exec("for %F in ($escaped_path) do @echo %~zF"));
+      }
+      else {
+        // Otherwise, use the stat command (*nix and MacOS).
+        $size = trim(exec("stat -Lc%s $escaped_path"));
+      }
+
+      // Ensure a number was returned.
+      if ($size AND ctype_digit($size)) {
+        // Return the file size as a string.
+        return (string) $size;
+      }
+    }
+    return FALSE;
+  }
+
+  /**
    * Create a file to store cookies.
    */
   protected function createCookieFile() {
@@ -616,9 +656,27 @@ class CurlConnection extends HttpConnection {
         clearstatcache(TRUE, $file);
         $fh = fopen($file, 'r');
         $size = filesize($file);
+        // Determine if this is 32-bit PHP (based on the integer size).
+        if (PHP_INT_SIZE === 4) {
+          // Retrieve the file size as a string.
+          $size = $this->filesize_php32bit($file);
+          if ($size !== FALSE) {
+            // When the file size is set using CURLOPT_INFILESIZE, the value
+            // is automatically converted into an integer. Unfortunately,
+            // 32-bit PHP can't handle file sizes (in bytes) larger than
+            // 2.15GB. To get around this, update the cURL header directly
+            // instead. The size remains a string when added to the header.
+            // cURL is then able to process the file correctly later on.
+            curl_setopt(self::$curlContext, CURLOPT_HTTPHEADER, array(
+              'Content-Length: ' . $size,
+            ));
+          }
+        }
+        else {
+          curl_setopt(self::$curlContext, CURLOPT_INFILESIZE, $size);
+        }
         curl_setopt(self::$curlContext, CURLOPT_PUT, TRUE);
         curl_setopt(self::$curlContext, CURLOPT_INFILE, $fh);
-        curl_setopt(self::$curlContext, CURLOPT_INFILESIZE, $size);
         break;
 
       case 'none':

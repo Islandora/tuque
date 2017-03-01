@@ -91,24 +91,41 @@ class RepositoryQuery {
    *   The contents returned, in the $format specified.
    */
   protected function internalQuery($query, $type = 'itql', $limit = -1, $format = 'Sparql') {
-    // Construct the query URL.
-    $url = '/risearch';
-    $seperator = '?';
 
-    $this->connection->addParam($url, $seperator, 'type', 'tuples');
-    $this->connection->addParam($url, $seperator, 'flush', TRUE);
-    $this->connection->addParam($url, $seperator, 'format', $format);
-    $this->connection->addParam($url, $seperator, 'lang', $type);
-    $this->connection->addParam($url, $seperator, 'query', $query);
+    if ($this->connection->url == $this->connection->sparql_endpoint) {
+      // We are using the included triplestore.
+      // Construct the query URL.
+      $url = '/risearch';
+      $seperator = '?';
 
-    // Add limit if provided.
-    if ($limit > 0) {
-      $this->connection->addParam($url, $seperator, 'limit', $limit);
+      $this->connection->addParam($url, $seperator, 'type', 'tuples');
+      $this->connection->addParam($url, $seperator, 'flush', TRUE);
+      $this->connection->addParam($url, $seperator, 'format', $format);
+      $this->connection->addParam($url, $seperator, 'lang', $type);
+      $this->connection->addParam($url, $seperator, 'query', $query);
+
+      // Add limit if provided.
+      if ($limit > 0) {
+        $this->connection->addParam($url, $seperator, 'limit', $limit);
+      }
+
+      $result = $this->connection->getRequest($url);
+
+      return $result['content'];
     }
-
-    $result = $this->connection->getRequest($url);
-
-    return $result['content'];
+    else {
+      // We are using an external triplestore.
+      if (strtolower($type) != 'sparql' || strtolower($format) != 'sparql') {
+        throw new RepositoryException('External triplestores only understand SPARQL!');
+      }
+      // Add limit if provided.
+      if ($limit > 0) {
+        $query .= "\n LIMIT $limit";
+      }
+      $result = $this->connection->postRequest($this->connection->sparql_endpoint, 'string',
+        $query, 'application/sparql-query');
+      return $result['content'];
+    }
   }
 
   /**

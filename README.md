@@ -25,6 +25,8 @@ Setting this to M can increase the stability and performance of Fedora.
 tuque.rels_ds_control_group = M
 ```
 
+It is possible to construct a RepositoryConnection object that will use distinct URIs for the endpoints of the repository and the SPARQL Query service that serves as a RDF index.
+
 USE AT YOUR OWN RISK!
 
 There are [issues](https://jira.duraspace.org/browse/FCREPO-849) that are inconsistent across Fedora versions and not fully explored with making the relation datastreams managed.

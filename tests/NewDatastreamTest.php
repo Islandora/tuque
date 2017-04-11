@@ -9,7 +9,12 @@ require_once 'Cache.php';
 require_once 'TestHelpers.php';
 
 use \PHPUnit\Framework\TestCase;
-use \PHPUnit\Framework\Error;
+use \PHPUnit\Framework\Error\Error;
+
+// XXX: PHPUnit6 moved the location of the Error class.
+if (class_exists('\PHPUnit\Framework\Error\Error', TRUE)) {
+  class_alias('\PHPUnit\Framework\Error\Error', 'PHPUnit_Framework_Error');
+}
 
 class NewDatastreamTest extends TestCase {
 
@@ -36,7 +41,7 @@ class NewDatastreamTest extends TestCase {
   }
 
   /**
-   * @expectedException Error
+   * @expectedException PHPUnit_Framework_Error
    */
   public function testConstructor() {
     $x = new NewFedoraDatastream('foo', 'zap', $this->object, $this->repository);
@@ -54,14 +59,14 @@ class NewDatastreamTest extends TestCase {
   }
 
   /**
-   * @expectedException Error
+   * @expectedException PHPUnit_Framework_Error
    */
   public function testUnsetControlGroup() {
     unset($this->x->controlGroup);
   }
 
   /**
-   * @expectedException Error
+   * @expectedException PHPUnit_Framework_Error
    */
   public function testSetControlGroup() {
     $this->x->controlGroup = 'M';

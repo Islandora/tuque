@@ -11,7 +11,8 @@ require_once 'TestHelpers.php';
 use \PHPUnit\Framework\TestCase;
 use \PHPUnit\Framework\Error\Error;
 
-// XXX: PHPUnit6 moved the location of the Error class.
+// XXX: PHPUnit6 moved the location of the Error class. 
+// This can be dropped when we drop support for PHP < 7.0 in our testing.
 if (class_exists('\PHPUnit\Framework\Error\Error', TRUE)) {
   class_alias('\PHPUnit\Framework\Error\Error', 'PHPUnit_Framework_Error');
 }

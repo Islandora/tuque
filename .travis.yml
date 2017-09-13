@@ -5,9 +5,10 @@ language: php
 matrix:
   include:
    #5.3.3 Ubuntu Precise exceptions
-    - php: 5.3.3
-      dist: precise
-      env: FEDORA_VERSION="3.5"
+   # Fedora 3.5 has a bug that makes tests fail. we should deprecate it fully
+    #- php: 5.3.3
+    #  dist: precise
+    #  env: FEDORA_VERSION="3.5"
     - php: 5.3.3
       dist: precise
       env: FEDORA_VERSION="3.6.2"
@@ -24,7 +25,8 @@ php:
   - 7.0
   - 7.1
 env:
-  - FEDORA_VERSION="3.5"
+  # Fedora 3.5 has a bug that makes tests fail. we should deprecate it fully
+  # - FEDORA_VERSION="3.5"
   - FEDORA_VERSION="3.6.2"
   - FEDORA_VERSION="3.7.0"
   - FEDORA_VERSION="3.8.1"

@@ -4,18 +4,18 @@ language: php
 
 matrix:
   include:
-   #5.3.1 Ubuntu Precise exceptions (not 5.3.3 since there is no SSL support there)
+   #5.3.10 Ubuntu Precise exceptions (not 5.3.3 since there is no SSL support there)
    # Fedora 3.5 has a bug that makes tests fail. we should deprecate it fully
-    #- php: 5.3.3
+    #- php: 5.3
     #  dist: precise
     #  env: FEDORA_VERSION="3.5"
-    - php: 5.3.1
+    - php: 5.3
       dist: precise
       env: FEDORA_VERSION="3.6.2"
-    - php: 5.3.1
+    - php: 5.3
       dist: precise
       env: FEDORA_VERSION="3.7.0"
-    - php: 5.3.1
+    - php: 5.3
       dist: precise
       env: FEDORA_VERSION="3.8.1"
 php:

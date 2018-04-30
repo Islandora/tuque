@@ -612,6 +612,18 @@ class FedoraApiFindObjectsTest extends TestCase {
     $this->markTestIncomplete();
   }
 
+  function testGetDatastreamProfile() {
+    $actual = $this->apia->getDatastreamProfile($this->pids[0], 'fixture');
+    $this->assertEquals('label', $actual['dsLabel']);
+    $this->assertEquals('image/png', $actual['dsMIME']);
+  }
+
+  function testGetDatastreamProfileAsOfDate() {
+    $actual = $this->apia->getDatastreamProfile($this->pids[0], 'fixture', '2012-03-13T17:40:29.057Z');
+    $this->assertEquals('fixture.3', $actual['dsVersionID']);
+    $this->assertEquals('2012-03-13T17:40:29.057Z', $actual['dsCreateDate']);
+  }
+
   function testGetObjectHistory() {
     foreach ($this->fixtures as $pid => $fixture) {
       $actual = $this->apia->getObjectHistory($pid);

@@ -319,10 +319,11 @@ class FedoraApiA {
    *   Persistent identifier of the digital object.
    * @param String $dsid
    *   Datastream identifier.
-   * @param array $as_of_date_time
+   * @param String $as_of_date_time
    *   (optional) Indicates that the result should be relative to the
    *     digital object as it existed at the given date and time. Defaults to
    *     the most recent version.
+   *     Format: YYYY-MM-DDTHH:MM:SS.SSSZ
    * @param array $file
    *   (optional) A file to retrieve the dissemination into.
    *
@@ -343,6 +344,38 @@ class FedoraApiA {
 
     $response = $this->connection->getRequest($request, FALSE, $file);
     $response = $this->serializer->getDatastreamDissemination($response, $file);
+    return $response;
+  }
+
+  /**
+   * Get the datastream profile.
+   *
+   * @param String $pid
+   *   Persistent identifier of the digital object.
+   * @param String $dsid
+   *   Datastream identifier.
+   * @param String|null $as_of_date_time
+   *   (optional) Indicates that the result should be relative to the
+   *     digital object as it existed at the given date and time. Defaults to
+   *     the most recent version.
+   *
+   * @throws RepositoryException
+   *
+   * @return array
+   *   The parsed datastream profile.
+   */
+  public function getDatastreamProfile($pid, $dsid, $as_of_date_time = NULL) {
+    $pid = urlencode($pid);
+    $dsid = urlencode($dsid);
+    $separator = '?';
+
+    $request = "/objects/$pid/datastreams/$dsid";
+    $this->connection->addParam($request,$separator, 'asOfDateTime', $as_of_date_time);
+    $this->connection->addParam($request,$separator, 'format', 'xml');
+
+    $response = $this->connection->getRequest($request, FALSE);
+
+    $response = $this->serializer->getDatastream($response);
     return $response;
   }
 

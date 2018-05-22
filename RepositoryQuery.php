@@ -91,6 +91,23 @@ class RepositoryQuery {
    *   The contents returned, in the $format specified.
    */
   protected function internalQuery($query, $type = 'itql', $limit = -1, $format = 'Sparql') {
+    # Patch to work around the fact that fuseki does not like hyphens
+    # in prefixes and Mulgara autodefines xsd
+    # https://github.com/quoll/mulgara/blob/master/src/jar/query/java/org/mulgara/query/rdf/XSDAbbrev.java#L25:L26
+    $namespaces = array(
+      "fedora-model" => "info:fedora/fedora-system:def/model#",
+      "fedora-view" => "info:fedora/fedora-system:def/view#",
+      "fedora-rels-ext" => "info:fedora/fedora-system:def/relations-external#",
+      "xsd" => "http://www.w3.org/2001/XMLSchema#"
+    );
+    $prefix = function($prefix) { return "<{$prefix}:"; };
+    $uri = function($uri) { return '<' . $uri; };
+    $query = str_replace(
+      array_map($prefix, array_keys($namespaces)),
+      array_map($uri, array_values($namespaces)),
+      $query
+    );
+
     // Construct the query URL.
     $url = '/risearch';
     $seperator = '?';

@@ -191,7 +191,24 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
       $this->parseFedoraExceptions($e);
     }
   }
-
+function generateCallTrace2()
+{
+    $e = new Exception();
+    $trace = explode("\n", $e->getTraceAsString());
+    // reverse array to make steps line up chronologically
+    $trace = array_reverse($trace);
+    array_shift($trace); // remove {main}
+    array_pop($trace); // remove call to this method
+    $length = count($trace);
+    $result = array();
+    
+    for ($i = 0; $i < $length; $i++)
+    {
+        $result[] = ($i + 1)  . ')' . substr($trace[$i], strpos($trace[$i], ' ')); // replace '#someNum' with '$i)', set the right ordering
+    }
+    
+    return "\t" . implode("\n\t", $result);
+}
   /**
    * This function attempts to parse the exceptions that are recieved from
    * Fedora into something more reasonable. This it very hard since really
@@ -226,6 +243,7 @@ class RepositoryConnection extends CurlConnection implements RepositoryConfigInt
         $message = $e->getMessage();
         break;
     }
+    $message .= $e->getTraceAsString();//BBB
     throw new RepositoryException($message, $code, $e);
   }
 }
